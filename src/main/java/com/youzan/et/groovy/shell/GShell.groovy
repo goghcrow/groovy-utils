@@ -1,5 +1,6 @@
 package com.youzan.et.groovy.shell
 
+import groovy.transform.TimedInterrupt
 import groovy.transform.ToString
 import org.codehaus.groovy.control.CompilationFailedException
 import org.codehaus.groovy.control.CompilerConfiguration
@@ -16,6 +17,8 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
 class GShell implements ApplicationContextAware {
+    final static Long TIMED_INTERRUPT = 2L
+
     ApplicationContext ctx
 
     @Override
@@ -27,18 +30,20 @@ class GShell implements ApplicationContextAware {
 
     static {
         def astCustomizer = new ASTTransformationCustomizer(ToString)
-        def sourceAwareCustomizer = new SourceAwareCustomizer(astCustomizer)
+        def sourceAware = new SourceAwareCustomizer(astCustomizer)
         // 1. 配置 AST 方案
         // e.g. 以 Bean 结尾的对象自动添加 @ToString ASTTransform
         // sourceAwareCustomizer.baseNameValidator = { it.endsWith 'Bean' }
-        // 2. 配置自动导入
-        def importer = new ImportCustomizer()
-        // 3. 配置安全策略
-        def secureCustomize = new SecureASTCustomizer()
+        def importer = new ImportCustomizer()                   // TODO 配置自动导入
+        def secure = new SecureASTCustomizer()         // TODO 配置安全策略
+        // 加入黑白名单
+        secure.indirectImportCheckEnabled = true
 
+        conf.addCompilationCustomizers CompilationUtils.FORBIDDEN_SYSTEM_EXIT
+        conf.addCompilationCustomizers CompilationUtils.timedInterrupt(TIMED_INTERRUPT)
         conf.addCompilationCustomizers importer
-        conf.addCompilationCustomizers sourceAwareCustomizer
-        conf.addCompilationCustomizers secureCustomize
+        conf.addCompilationCustomizers sourceAware
+        conf.addCompilationCustomizers secure
         conf.scriptBaseClass = BaseScript.name
     }
 
@@ -62,7 +67,7 @@ class GShell implements ApplicationContextAware {
         def ck = cacheKey(uni)
 
         if (bindings) {
-            bindings.putAll([ctx: ctx, out: new PrintStream(out)])
+            bindings.putAll([ctx: ctx, out: new PrintStream(out)]) // 这里也可以PrintWriter (字节流/字符流)
         } else {
             bindings = [ctx: ctx, out: new PrintStream(out)]
         }

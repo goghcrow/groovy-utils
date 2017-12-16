@@ -3,6 +3,7 @@ package com.youzan.et.groovy.shell;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
+import groovy.transform.TimedInterrupt;
 import groovy.transform.ToString;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -24,12 +25,16 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.security.MessageDigest;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 class GShellJ implements ApplicationContextAware {
+    private final static Long TIMED_INTERRUPT = 2L;
+
     private ApplicationContext ctx;
 
     @Override
@@ -40,19 +45,8 @@ class GShellJ implements ApplicationContextAware {
     private final static CompilerConfiguration conf = new CompilerConfiguration();
 
     static {
-        ASTTransformationCustomizer astCustomizer = new ASTTransformationCustomizer(ToString.class);;
-        SourceAwareCustomizer sourceAwareCustomizer = new SourceAwareCustomizer(astCustomizer);
-        // 1. 配置 AST 方案
-        // e.g. 以 Bean 结尾的对象自动添加 @ToString ASTTransform
-        // sourceAwareCustomizer.baseNameValidator = { it.endsWith 'Bean' }
-        // 2. 配置自动导入
-        ImportCustomizer importer = new ImportCustomizer();
-        // 3. 配置安全策略
-        SecureASTCustomizer secureCustomize = new SecureASTCustomizer();
-
-        conf.addCompilationCustomizers(importer);
-        conf.addCompilationCustomizers(sourceAwareCustomizer);
-        conf.addCompilationCustomizers(secureCustomize);
+        conf.addCompilationCustomizers(CompilationUtils.FORBIDDEN_SYSTEM_EXIT);
+        conf.addCompilationCustomizers(CompilationUtils.timedInterrupt(TIMED_INTERRUPT));
         conf.setScriptBaseClass(BaseScript.class.getName());
     }
 
