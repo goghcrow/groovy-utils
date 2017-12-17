@@ -1,6 +1,7 @@
 package com.youzan.et.groovy.shell;
 
 import groovy.transform.TimedInterrupt;
+import groovy.util.logging.Slf4j;
 import org.codehaus.groovy.ast.ClassCodeVisitorSupport;
 import org.codehaus.groovy.ast.ClassNode;
 import org.codehaus.groovy.ast.expr.MethodCallExpression;
@@ -14,8 +15,6 @@ import org.codehaus.groovy.syntax.SyntaxException;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author chuxiaofeng
@@ -45,6 +44,8 @@ public class CompilationUtils {
             }.visitClass(classNode);
         }
     };
+
+    public final static CompilationCustomizer SLF4J = new ASTTransformationCustomizer(Slf4j.class);
 
     public static CompilationCustomizer timedInterrupt(long sec) {
         Map<String, Object> map = new HashMap<>();

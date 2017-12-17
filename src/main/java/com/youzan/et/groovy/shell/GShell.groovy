@@ -1,6 +1,6 @@
 package com.youzan.et.groovy.shell
 
-import groovy.transform.TimedInterrupt
+import groovy.transform.CompileStatic
 import groovy.transform.ToString
 import org.codehaus.groovy.control.CompilationFailedException
 import org.codehaus.groovy.control.CompilerConfiguration
@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationContextAware
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
+@CompileStatic
 class GShell implements ApplicationContextAware {
     final static Long TIMED_INTERRUPT = 2L
 
@@ -26,9 +27,9 @@ class GShell implements ApplicationContextAware {
         ctx = applicationContext
     }
 
-    private final static CompilerConfiguration conf = new CompilerConfiguration()
+    public final CompilerConfiguration conf = new CompilerConfiguration();
 
-    static {
+    {
         def astCustomizer = new ASTTransformationCustomizer(ToString)
         def sourceAware = new SourceAwareCustomizer(astCustomizer)
         // 1. 配置 AST 方案
@@ -40,7 +41,8 @@ class GShell implements ApplicationContextAware {
         secure.indirectImportCheckEnabled = true
 
         conf.addCompilationCustomizers CompilationUtils.FORBIDDEN_SYSTEM_EXIT
-        conf.addCompilationCustomizers CompilationUtils.timedInterrupt(TIMED_INTERRUPT)
+        conf.addCompilationCustomizers CompilationUtils.SLF4J
+//        conf.addCompilationCustomizers CompilationUtils.timedInterrupt(TIMED_INTERRUPT)
         conf.addCompilationCustomizers importer
         conf.addCompilationCustomizers sourceAware
         conf.addCompilationCustomizers secure
@@ -60,16 +62,19 @@ class GShell implements ApplicationContextAware {
     // 同一个 shell 执行多个脚本内部如果操作 Binding 数据, 有风险
     // 这里没有直接使用 GroovyClassLoader, 而是借助 Shell Parse 获取 Class 并缓存
     // 注意, 不是缓存 Script 实例, 而是在脚本初次执行成功后, 缓存 Class, 之后每次执行使用新的 Script 实例
-    private Object cacheEval(Union uni, OutputStream out, Map bindings)
+    private Object cacheEval(Union uni, Map bindings, OutputStream out)
             throws CompilationFailedException, IOException {
         def ret
         def script
         def ck = cacheKey(uni)
 
         if (bindings) {
-            bindings.putAll([ctx: ctx, out: new PrintStream(out)]) // 这里也可以PrintWriter (字节流/字符流)
+            bindings.putAll([ctx: ctx]) // 这里也可以PrintWriter (字节流/字符流)
         } else {
-            bindings = [ctx: ctx, out: new PrintStream(out)]
+            bindings = [ctx: ctx]
+        }
+        if (out) {
+            bindings << [out: new PrintStream(out)]
         }
         def binding = new Binding(bindings)
 
@@ -102,20 +107,38 @@ class GShell implements ApplicationContextAware {
 
     EvalResult eval(String code, Map bindings) {
         Objects.requireNonNull(code)
-        def out = new ByteArrayOutputStream()
         try {
-            def ret = cacheEval(new Union(code), out, bindings)
+            def ret = cacheEval(new Union(code), bindings, null)
+            [ret: ret, out: null] as EvalResult
+        } catch (Exception e) {
+            [ret: e, out: null] as EvalResult
+        }
+    }
+
+    EvalResult eval(URI uri, Map bindings) {
+        Objects.requireNonNull(uri)
+        try {
+            def ret = cacheEval(new Union(uri), bindings, null)
+            [ret: ret, out: null] as EvalResult
+        } catch (Exception e) {
+            [ret: e, out: null] as EvalResult
+        }
+    }
+
+    EvalResult eval(String code, Map bindings, OutputStream out) {
+        Objects.requireNonNull(code)
+        try {
+            def ret = cacheEval(new Union(code), bindings, out)
             [out: out.toString(), ret: ret] as EvalResult
         } catch (Exception e) {
             [out: out.toString(), ret: e] as EvalResult
         }
     }
 
-    EvalResult eval(URI uri, Map bindings) {
+    EvalResult eval(URI uri, Map bindings, OutputStream out) {
         Objects.requireNonNull(uri)
-        def out = new ByteArrayOutputStream()
         try {
-            def ret = cacheEval(new Union(uri), out, bindings)
+            def ret = cacheEval(new Union(uri), bindings, out)
             [out: out.toString(), ret: ret] as EvalResult
         } catch (Exception e) {
             [out: out.toString(), ret: e] as EvalResult

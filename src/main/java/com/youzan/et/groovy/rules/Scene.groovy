@@ -1,10 +1,13 @@
 package com.youzan.et.groovy.rules
 
-class Scene extends Rules {
-    private static int i = 0
-    String name = 'scene' + i++
-    String desc = ''
+import groovy.transform.CompileStatic
 
-    Scene name(String name) { this.name = name; this }
-    Scene desc(String desc) { this.desc = desc; this }
+@CompileStatic
+class Scene extends Rules {
+    private static long _i = 0
+    String _name = 'scene' + _i++
+    String _desc = ''
+
+    Scene name(String name) { _name = name; this }
+    Scene desc(String desc) { _desc = desc; this }
 }

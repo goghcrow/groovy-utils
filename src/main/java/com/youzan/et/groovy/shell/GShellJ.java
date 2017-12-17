@@ -3,16 +3,10 @@ package com.youzan.et.groovy.shell;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
-import groovy.transform.TimedInterrupt;
-import groovy.transform.ToString;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.codehaus.groovy.control.CompilerConfiguration;
-import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
-import org.codehaus.groovy.control.customizers.ImportCustomizer;
-import org.codehaus.groovy.control.customizers.SecureASTCustomizer;
-import org.codehaus.groovy.control.customizers.SourceAwareCustomizer;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -25,11 +19,9 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.security.MessageDigest;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 class GShellJ implements ApplicationContextAware {
@@ -42,10 +34,11 @@ class GShellJ implements ApplicationContextAware {
         ctx = applicationContext;
     }
 
-    private final static CompilerConfiguration conf = new CompilerConfiguration();
+    public final CompilerConfiguration conf = new CompilerConfiguration();
 
-    static {
+    {
         conf.addCompilationCustomizers(CompilationUtils.FORBIDDEN_SYSTEM_EXIT);
+        conf.addCompilationCustomizers(CompilationUtils.SLF4J);
         conf.addCompilationCustomizers(CompilationUtils.timedInterrupt(TIMED_INTERRUPT));
         conf.setScriptBaseClass(BaseScript.class.getName());
     }
@@ -58,7 +51,7 @@ class GShellJ implements ApplicationContextAware {
 
     private final Map<String, Class> classCache = new ConcurrentHashMap<>();
 
-    private Object cacheEval(Union uni, OutputStream out, Map<String, Object> bindings)
+    private Object cacheEval(Union uni, Map<String, Object> bindings, OutputStream out)
             throws CompilationFailedException, IOException {
         Object ret;
         Script script;
@@ -66,7 +59,9 @@ class GShellJ implements ApplicationContextAware {
 
         Binding binding = new Binding(bindings);
         binding.setVariable("ctx", ctx);
-        binding.setVariable("out", new PrintStream(out));
+        if (out != null) {
+            binding.setVariable("out", new PrintStream(out));
+        }
 
         GroovyShell shell = new GroovyShell(this.getClass().getClassLoader(), conf);
 
@@ -97,20 +92,38 @@ class GShellJ implements ApplicationContextAware {
 
     EvalResult eval(String code, Map<String, Object> bindings) {
         Objects.requireNonNull(code);
-        OutputStream out = new ByteArrayOutputStream();
         try {
-            Object ret = cacheEval(new Union(code), out, bindings);
+            Object ret = cacheEval(new Union(code), bindings, null);
+            return new EvalResult(null, ret);
+        } catch (Exception e) {
+            return new EvalResult(null, e);
+        }
+    }
+
+    EvalResult eval(URI uri, Map<String, Object> bindings) {
+        Objects.requireNonNull(uri);
+        try {
+            Object ret = cacheEval(new Union(uri), bindings, null);
+            return new EvalResult(null, ret);
+        } catch (Exception e) {
+            return new EvalResult(null, e);
+        }
+    }
+
+    EvalResult eval(String code, Map<String, Object> bindings, OutputStream out) {
+        Objects.requireNonNull(code);
+        try {
+            Object ret = cacheEval(new Union(code), bindings, out);
             return new EvalResult(out.toString(), ret);
         } catch (Exception e) {
             return new EvalResult(out.toString(), e);
         }
     }
 
-    EvalResult eval(URI uri, Map<String, Object> bindings) {
+    EvalResult eval(URI uri, Map<String, Object> bindings, OutputStream out) {
         Objects.requireNonNull(uri);
-        OutputStream out = new ByteArrayOutputStream();
         try {
-            Object ret = cacheEval(new Union(uri), out, bindings);
+            Object ret = cacheEval(new Union(uri), bindings, out);
             return new EvalResult(out.toString(), ret);
         } catch (Exception e) {
             return new EvalResult(out.toString(), e);

@@ -1,15 +1,15 @@
 package com.youzan.et.groovy.rules
 
-Rule rule(Closure c) {
-    def rule = new Rule()
-    rule.with c
-    rule
+Rule rule(@DelegatesTo(Rule) Closure c) {
+    def _rule = new Rule()
+    _rule.with c
+    _rule
 }
 
-def rules(Closure c) {
-    def rules = new Rules()
-    rules.with c
-    rules
+Rules rules(@DelegatesTo(Rules) Closure c) {
+    def _rules = new Rules()
+    _rules.with c
+    _rules
 }
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
@@ -44,12 +44,12 @@ println rules {
     }
 
     // 支持不定参数, 支持 Rule|Rules|Closure 三种类型任意个数不定参数
-    rule rl, rls, {
-        name 'z-rule'
-        order 11
-        when { Map facts -> true }
-        then { Map facts -> println 'exec-z-rule'}
-    }
+//    rule rl, rls, {
+//        name 'z-rule'
+//        order 11
+//        when { Map facts -> true }
+//        then { Map facts -> println 'exec-z-rule'}
+//    }
 }
 println ''
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
@@ -88,38 +88,148 @@ println rules {} + rm - rm
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 
-def fizzBuzzRules =
-
-rules {
+def fizzBuzzRules = rules {
     rule {
-        order 1
-        when { it.num % 5 == 0 }
+        order 2
+        when { num % 5 == 0 }
         then { println 'fizz' }
     }
     rule {
-        order 1
-        when { it.num % 8 == 0 }
+        order 3
+        when { num % 7 == 0 }
         then { println 'buzz' }
     }
     rule {
-        order 0
-        when { it.num % 5 == 0 && it.num % 8 == 0 }
+        order 1
+        when { num % 5 == 0 && num % 7 == 0 }
         then { println 'fizzbuzz' }
     }
     rule {
-        order 2
-        when { it.num % 5 != 0 && it.num % 8 != 0 }
+        order 3
+        when { num % 5 != 0 && num % 7 != 0 }
         then { println it.num}
     }
 }
 
-def engine = new RuleEngine()
-(1..100).each {
-    engine.fire(fizzBuzzRules, ['num': it])
+fizzBuzzRules << rule {
+    order 0
+    when { name == 'xiaofeng42' }
+    then { println 'hello' }
 }
 
+def engine = new RuleEngine()
+
 (1..100).each {
-    println engine.check(fizzBuzzRules, ['num': it])
+    engine.fire(fizzBuzzRules, [
+            num: it,
+            name: "xiaofeng$it"
+    ])
 }
+
+// (1..100).each { println it; println engine.check(fizzBuzzRules, [num: it]) }
+println ''
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+new RuleEngineEx(skipOnApplied: true).fire(rules {
+    rule {
+        when { id == 42 }
+        then { println 42 }
+    }
+    rule {
+        when { id % 2 == 0}
+        then { assert false }
+    }
+}, [id: 42])
+println ''
+
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+new RuleEngineEx(skipOnIgnored: true).fire(rules {
+    rule {
+        when { id != 42 }
+        then { println 42 }
+    }
+    rule {
+        when { id % 2 == 0 }
+        then { assert false }
+    }
+}, [id: 42])
+println ''
+
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+new RuleEngineEx(skipOnFailed: true).fire(rules {
+    rule {
+        when { id == 42 }
+        then { throw new RuntimeException() }
+    }
+    rule {
+        when { id % 2 == 0 }
+        then { assert false }
+    }
+}, [id: 42])
+println ''
+
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+def engineEx = new RuleEngineEx()
+engineEx.beforeEval << {rule, facts -> id != 42 }
+engineEx.beforeEval << {rule, facts -> id != 22 }
+def testRules = rules {
+    rule {
+        when { id % 2 == 0 }
+        then { println id }
+    }
+}
+engineEx.fire(testRules, [id: 2])
+engineEx.fire(testRules, [id: 22])
+engineEx.fire(testRules, [id: 4])
+engineEx.fire(testRules, [id: 42])
+println ''
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+def check = new RuleEngineEx().&check.curry(rules {
+    rule {
+        when { id == 42 }
+        then { println 'universal answer' }
+    }
+})
+
+println check([id: 1])
+println check([id: 42])
+println ''
+
+check = new RuleEngineEx().&check.curry('''
+rules {
+    rule {
+        when { id == 42 }
+        then { println 'universal answer' }
+    }
+}
+''')
+
+println check([id: 1])
+println check([id: 42])
+println ''
+
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+def codeGen(Map<String, String> define) {
+    def sb = new StringBuffer()
+    "rules {\n" + define.inject(sb) { StringBuffer it, entry -> it.append """
+    rule {
+        when { $entry.key }
+        then { $entry.value }
+    }
+""" + "\n}"
+    }
+}
+
+
+new RuleEngineEx().fire(
+        codeGen(['id == 42': 'println "hello"']),
+        [id: 42]
+)
+
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */

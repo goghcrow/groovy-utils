@@ -1,16 +1,19 @@
 package com.youzan.et.groovy.rules
 
+import groovy.transform.CompileStatic
 
+
+@CompileStatic
 class Rules implements Iterable<Rule> {
     Set<Rule> rules = new TreeSet<>()
 
     // add return origin
     Rules leftShift(final Rule r) { rules.add r; this }
     Rules leftShift(final Rules rs) { rules.addAll rs; this }
-    Rules rule(...args) { args.each { rule it }; this }
+    // Rules rule(...args) { args.each { rule it }; this } // 静态编译这里有问题, 暂时取消
     Rules rule(final Rule r) { rules.add(r); this }
     Rules rule(final Rules rs) { rules.addAll rs; this }
-    Rules rule(Closure c) {
+    Rules rule(@DelegatesTo(Rule) Closure c) {
         def rule = new Rule();
         rule.with c
         rules.add rule
