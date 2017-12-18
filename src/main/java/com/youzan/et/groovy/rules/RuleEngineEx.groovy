@@ -12,7 +12,7 @@ class RuleEngineEx extends RuleEngine {
             true
         }
         afterEval << { Rule rule, Map facts, boolean trigger ->
-            log.info("规则 ${rule._name} ${trigger ? '触发' : '拒绝'}" );
+            log.info("规则 ${rule._name} ${trigger ? '触发' : '拒绝'}" )
         }
         afterExec << { Rule rule, Map facts, Exception ex ->
             if (ex) {

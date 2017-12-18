@@ -88,7 +88,9 @@ println rules {} + rm - rm
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 
-def fizzBuzzRules = rules {
+def fizzBuzzRules =
+
+rules {
     rule {
         order 2
         when { num % 5 == 0 }
@@ -111,13 +113,15 @@ def fizzBuzzRules = rules {
     }
 }
 
+
+
 fizzBuzzRules << rule {
     order 0
     when { name == 'xiaofeng42' }
     then { println 'hello' }
 }
 
-def engine = new RuleEngine()
+def engine = new RuleEngine(skipOnApplied: true)
 
 (1..100).each {
     engine.fire(fizzBuzzRules, [
@@ -128,6 +132,7 @@ def engine = new RuleEngine()
 
 // (1..100).each { println it; println engine.check(fizzBuzzRules, [num: it]) }
 println ''
+System.exit 1
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 new RuleEngineEx(skipOnApplied: true).fire(rules {
@@ -226,6 +231,7 @@ def codeGen(Map<String, String> define) {
 }
 
 
+
 new RuleEngineEx().fire(
         codeGen(['id == 42': 'println "hello"']),
         [id: 42]
@@ -233,3 +239,21 @@ new RuleEngineEx().fire(
 
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+@Fact(name ='业务对象')
+class Biz {
+
+    @FactField(name='姓名')
+    String name
+
+    Integer id
+}
+
+
+Biz.getDeclaredFields().each {
+    it.getAnnotation(FactField.class)
+}
+println Utils.findAnnotation(FactField.class, Biz.getDeclaredField('name').class)
+
+//def anno = Utils.findAnnotation(Fact.class, Biz)
+//anno.name()
