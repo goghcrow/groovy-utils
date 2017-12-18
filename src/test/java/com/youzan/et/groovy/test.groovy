@@ -1,12 +1,16 @@
 package com.youzan.et.groovy
 
-import com.youzan.et.groovy.shell.GShell
-import groovy.transform.TimedInterrupt
+import groovy.transform.CompileStatic
 
-import java.util.concurrent.TimeUnit
+@CompileStatic
+class MapX {
+    @Delegate Map map = [hello: 'world']
+}
 
+def m = new MapX()
+println m.hello
+println m.size()
 
-def shell = new GShell()
-println shell.eval('''
-java.lang.System.exit(1)
-''')
+Runtime.addShutdownHook {
+    println 'hello'
+}
