@@ -3,6 +3,7 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rule.Rule
 import com.youzan.et.groovy.rule.RuleEngine
 import com.youzan.et.groovy.rule.Rules
+import com.youzan.et.groovy.rulex.datasrc.SceneDAO
 import com.youzan.et.groovy.shell.GShell
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -26,14 +27,15 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         }
         afterExec << { Rule rule, Map<String, Object> facts, Exception ex ->
             if (ex) {
-                log.error("规则 ${rule._name} 执行失败", ex);
+                log.error("规则 ${rule._name} 执行失败", ex)
             } else {
-                log.info("规则 ${rule._name} 执行成功" );
+                log.info("规则 ${rule._name} 执行成功" )
             }
         }
     }
 
     ApplicationContext ctx
+    SceneDAO sceneDAO
 
     void setApplicationContext(ApplicationContext appCtx) throws BeansException { ctx = appCtx }
 
@@ -41,6 +43,17 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         facts.putIfAbsent('log', log)
         facts.putIfAbsent('facts', facts)
         new Facts(ctx: ctx, facts: facts)
+    }
+
+    void build() {
+        Objects.requireNonNull(ctx)
+        String appId = ctx.getApplicationName()
+        assert appId
+
+        sceneDAO.getScenesByApp(appId)
+        sceneDAO.getRulesByApp(appId)
+
+        // TODO
     }
 
     void fire(String define, Map<String, Object> facts) {
@@ -65,12 +78,14 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
     @CompileStatic
     abstract static class BaseScript extends Script {
+        @SuppressWarnings("GrMethodMayBeStatic")
         Rule rule(@DelegatesTo(Rule) Closure c) {
             def rule = new Rule()
             rule.with c
             rule
         }
 
+        @SuppressWarnings("GrMethodMayBeStatic")
         Scene scene(@DelegatesTo(Rules) Closure c) {
             def _scene = new Scene()
             _scene.with c

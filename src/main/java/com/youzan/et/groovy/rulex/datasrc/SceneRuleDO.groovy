@@ -1,8 +1,10 @@
-package com.youzan.et.groovy.rulex.dataobj
+package com.youzan.et.groovy.rulex.datasrc
 
 import groovy.transform.Canonical
+import groovy.transform.CompileStatic
 
 @Canonical
+@CompileStatic
 class SceneRuleDO {
     final static Byte expr = (byte)1
     final static Byte script = (byte)2
