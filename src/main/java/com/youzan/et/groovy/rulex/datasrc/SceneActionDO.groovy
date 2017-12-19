@@ -5,7 +5,7 @@ import groovy.transform.CompileStatic
 
 @Canonical
 @CompileStatic
-class SceneActionDO {
+class SceneActionDO extends AbstractDO {
     Long id
     String actionCode
     String actionDesc

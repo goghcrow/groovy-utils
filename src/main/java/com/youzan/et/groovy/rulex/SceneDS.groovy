@@ -3,9 +3,7 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rulex.datasrc.*
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
-import groovy.transform.PackageScope
 
-import javax.annotation.Resource
 import javax.sql.DataSource
 
 class SceneDS {
@@ -13,11 +11,7 @@ class SceneDS {
     private DataSource ds
 
     private Sql db() {
-//        new Sql(ds)
-        Sql.newInstance(
- 'jdbc:mysql://127.0.0.1:3306/et_engine?useServerPrepStmts=false&zeroDateTimeBehavior=convertToNull&characterEncoding=utf8',
- 'root', '123456', 'com.mysql.jdbc.Driver'
- )
+        new Sql(ds)
     }
 
     List<SceneDO> getScenesByApp(String appId) {

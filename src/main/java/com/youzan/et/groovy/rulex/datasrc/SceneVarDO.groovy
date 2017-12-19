@@ -5,7 +5,7 @@ import groovy.transform.CompileStatic
 
 @Canonical
 @CompileStatic
-class SceneVarDO {
+class SceneVarDO extends AbstractDO {
     Long id
     String appId
     Long sceneId

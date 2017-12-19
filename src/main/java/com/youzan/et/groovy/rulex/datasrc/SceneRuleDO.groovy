@@ -5,7 +5,7 @@ import groovy.transform.CompileStatic
 
 @Canonical
 @CompileStatic
-class SceneRuleDO {
+class SceneRuleDO extends AbstractDO {
     final static Byte expr = (byte)1
     final static Byte script = (byte)2
 

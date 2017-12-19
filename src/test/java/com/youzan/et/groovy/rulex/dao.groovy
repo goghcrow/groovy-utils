@@ -1,5 +1,10 @@
 package com.youzan.et.groovy.rulex
 
+import com.youzan.et.groovy.rulex.datasrc.SceneActionDO
+import com.youzan.et.groovy.rulex.datasrc.SceneDO
+import com.youzan.et.groovy.rulex.datasrc.SceneRuleDO
+import com.youzan.et.groovy.rulex.datasrc.SceneRuleExprDO
+import com.youzan.et.groovy.rulex.datasrc.SceneVarDO
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 
@@ -26,17 +31,18 @@ def selectStar(table, clazz) {
 
     println ''
     def rows = db.rows('SELECT * FROM ' + table)
-    println toBeans(rows, clazz)
+    def bean = toBeans(rows, clazz)
+    println bean
     println ''
 }
 
-//selectStar('et_scene', SceneDO)
-//selectStar('et_scene_action', SceneActionDO)
-//selectStar('et_scene_rule', SceneRuleDO)
-//selectStar('et_scene_rule_expr', SceneRuleExprDO)
-//selectStar('et_scene_var', SceneVarDO)
+selectStar('et_scene', SceneDO)
+selectStar('et_scene_action', SceneActionDO)
+selectStar('et_scene_rule', SceneRuleDO)
+selectStar('et_scene_rule_expr', SceneRuleExprDO)
+selectStar('et_scene_var', SceneVarDO)
 
 
-def dao = new SceneDS()
-println dao.getScenesByApp('et_xiaolv')
-println dao.getRulesByApp('et_xiaolv')
+//def dao = new SceneDS()
+//println dao.getScenesByApp('et_xiaolv')
+//println dao.getRulesByApp('et_xiaolv')
