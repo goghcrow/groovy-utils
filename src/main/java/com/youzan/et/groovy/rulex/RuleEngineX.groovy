@@ -10,7 +10,7 @@ import org.springframework.beans.BeansException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 
-import javax.annotation.Resource
+import javax.sql.DataSource
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -36,32 +36,49 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         }
     }
 
+    DataSource dataSource
+
+    String appName
+
+    private
     Map<String, Scene> scenesTbl = new ConcurrentHashMap()
 
-    @Resource
+    private
     SceneDS sceneDS
 
-    ApplicationContext ctx
+    private
+    static ApplicationContext ctx
 
     void setApplicationContext(ApplicationContext appCtx) throws BeansException { ctx = appCtx }
+
+    private envCheck() {
+        if (!ctx) {
+            throw new RuntimeException('请在 application.xml 配置 RuleEngineX Bean')
+        }
+        if (!appName) {
+            throw new RuntimeException('请为 RuleEngineX Bean 配置 appName 属性')
+        }
+        if (!dataSource) {
+            throw new RuntimeException('请为 RuleEngineX Bean 配置 dataSource 属性')
+        }
+        if (!sceneDS) {
+            sceneDS = new SceneDS(ds: dataSource)
+        }
+    }
 
     /**
      * 刷新当前应用规则
      */
     void refresh() {
-        assert ctx
-        String appId = ctx.getApplicationName()
-        // TODO
-        appId = 'et_xiaolv'
-        assert appId
+        envCheck()
 
-        // TODO
-        if (!sceneDS) sceneDS = new SceneDS()
+        def scenes = sceneDS.getScenesByApp(appName)
+        if (!scenes) {
+            log.info("未获取到应用($appName)规则场景")
+            return
+        }
 
-        def scenes = sceneDS.getScenesByApp(appId)
-        if (!scenes) return
-
-        def rules = sceneDS.getRulesByApp(appId)
+        def rules = sceneDS.getRulesByApp(appName)
         def actCodes = sceneDS.getActionsCodesByRules(rules)
         def actions = sceneDS.getActionsByCodes(actCodes)
         def exprIds = sceneDS.getExprIdsByRules(rules)
@@ -88,6 +105,8 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * @param sceneCode
      */
     void refresh(String sceneCode) {
+        envCheck()
+
         def dsl = render(sceneCode)
         def scene = compile(dsl)
         if (scene == null) {
@@ -102,21 +121,14 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * @return
      */
     String render(String sceneCode) {
+        envCheck()
+
         if (sceneCode == null) return null
 
-        assert ctx
-        String appId = ctx.getApplicationName()
-        // TODO
-        appId = 'et_xiaolv'
-        assert appId
-
-        // TODO
-        if (!sceneDS) sceneDS = new SceneDS()
-
-        def scene = sceneDS.getSceneByCode(appId, sceneCode)
+        def scene = sceneDS.getSceneByCode(appName, sceneCode)
         if (scene == null) return null
 
-        def rules = sceneDS.getRulesBySceneCode(appId, sceneCode)
+        def rules = sceneDS.getRulesBySceneCode(appName, sceneCode)
         def actCodes = sceneDS.getActionsCodesByRules(rules)
         def actions = sceneDS.getActionsByCodes(actCodes)
         def exprIds = sceneDS.getExprIdsByRules(rules)
@@ -135,6 +147,8 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      */
     @SuppressWarnings("GrMethodMayBeStatic")
     Scene compile(String sceneDefine) {
+        envCheck()
+
         if (sceneDefine == null) return null
         SceneBuilder.compile(sceneDefine)
     }
@@ -145,7 +159,9 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * @param facts
      */
     void fire(String sceneCode, Map<String, Object> facts) {
-        assert sceneCode
+        envCheck()
+
+        if (sceneCode == null) return
         if (!scenesTbl.containsKey(sceneCode)) {
             throw new RuntimeException("场景未定义(code=$sceneCode)")
         }
@@ -162,7 +178,9 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * @return
      */
     Map<Rule, Boolean> check(String sceneCode, Map<String, Object> facts) {
-        assert sceneCode
+        envCheck()
+
+        if (sceneCode == null) return null
         if (!scenesTbl.containsKey(sceneCode)) {
             throw new RuntimeException("场景未定义(code=$sceneCode)")
         }
@@ -177,6 +195,8 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * @param doAction 是否执行 action
      */
     Map<Rule, Boolean> test(String sceneCode, Map<String, Object> facts, boolean doAction = false) {
+        envCheck()
+
         def dsl = render(sceneCode)
         if (dsl == null) {
             throw new RuntimeException("场景未定义(code=$sceneCode)")

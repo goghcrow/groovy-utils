@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 class GShell implements ApplicationContextAware {
     final static Long TIMED_INTERRUPT = 2L
 
-    ApplicationContext ctx
+    static ApplicationContext ctx
 
     @Override
     void setApplicationContext(ApplicationContext applicationContext) throws BeansException {

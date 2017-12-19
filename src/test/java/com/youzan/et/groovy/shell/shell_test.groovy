@@ -25,26 +25,26 @@ println ctx
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-def shellJ = new GShellJ()
-shellJ.ctx = new StaticApplicationContext()
-
-println shellJ.eval('''
-println 'hello'
-'world'
-''')
-
-println shellJ.eval('''
-println 'hello'
-'world'
-''')
-
-println shellJ.eval('''
-1/0
-''')
-
-println shellJ.eval('''
-println ctx
-''')
+//def shellJ = new GShellJ()
+//shellJ.ctx = new StaticApplicationContext()
+//
+//println shellJ.eval('''
+//println 'hello'
+//'world'
+//''')
+//
+//println shellJ.eval('''
+//println 'hello'
+//'world'
+//''')
+//
+//println shellJ.eval('''
+//1/0
+//''')
+//
+//println shellJ.eval('''
+//println ctx
+//''')
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 println ""

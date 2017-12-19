@@ -4,6 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <artifactId>parent-pom</artifactId>
+        <groupId>com.youzan</groupId>
+        <version>1.0.2</version>
+    </parent>
+
     <groupId>com.youzan.et</groupId>
     <artifactId>groovy-utils</artifactId>
     <version>1.0-SNAPSHOT</version>
@@ -20,6 +26,7 @@
 
         <slf4j.version>1.7.25</slf4j.version>
         <logback.version>1.1.11</logback.version>
+        <gmavenplus.version>1.6</gmavenplus.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -64,6 +71,11 @@
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
+            <version>${gmavenplus.version}</version>
+        </dependency>
 
 
         <dependency>
@@ -84,7 +96,25 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
-
+            <!--<plugin>-->
+                <!--<groupId>org.codehaus.gmavenplus</groupId>-->
+                <!--<artifactId>gmavenplus-plugin</artifactId>-->
+                <!--<version>${gmavenplus.version}</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<goals>-->
+                            <!--<goal>addSources</goal>-->
+                            <!--<goal>addTestSources</goal>-->
+                            <!--<goal>generateStubs</goal>-->
+                            <!--<goal>compile</goal>-->
+                            <!--<goal>generateTestStubs</goal>-->
+                            <!--<goal>compileTests</goal>-->
+                            <!--<goal>removeStubs</goal>-->
+                            <!--<goal>removeTestStubs</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
             <plugin>
                 <groupId>org.codehaus.gmaven</groupId>
                 <artifactId>gmaven-plugin</artifactId>

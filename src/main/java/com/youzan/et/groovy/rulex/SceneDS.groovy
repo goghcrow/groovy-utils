@@ -5,23 +5,19 @@ import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 import groovy.transform.PackageScope
 
+import javax.annotation.Resource
 import javax.sql.DataSource
 
-//@CompileStatic
-@PackageScope
 class SceneDS {
 
-    // static { GroovyRowResult.metaClass.toBean = this.&toBean }
+    private DataSource ds
 
-    // @Resource
-    DataSource ds
-
-    // TODO
     private Sql db() {
-        // new Sql(ds)
-        Sql.newInstance('jdbc:mysql://127.0.0.1:3306/et_engine?useServerPrepStmts=false&zeroDateTimeBehavior=convertToNull&characterEncoding=utf8',
-                'root', '123456', 'com.mysql.jdbc.Driver'
-        )
+//        new Sql(ds)
+        Sql.newInstance(
+ 'jdbc:mysql://127.0.0.1:3306/et_engine?useServerPrepStmts=false&zeroDateTimeBehavior=convertToNull&characterEncoding=utf8',
+ 'root', '123456', 'com.mysql.jdbc.Driver'
+ )
     }
 
     List<SceneDO> getScenesByApp(String appId) {
