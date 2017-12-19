@@ -4,10 +4,16 @@ import groovy.transform.CompileStatic
 
 @CompileStatic
 class RuleEngine {
+    @CompileStatic
+    static class Options {
+        boolean skipOnApplied = false
+        boolean skipOnIgnored = false
+        boolean skipOnFailed = false
+    }
 
-    boolean skipOnApplied = false
-    boolean skipOnIgnored = false
-    boolean skipOnFailed = false
+    final static Options skipOnApplied = new Options(skipOnApplied: true)
+    final static Options skipOnIgnored = new Options(skipOnIgnored: true)
+    final static Options skipOnFailed = new Options(skipOnFailed: true)
 
     List<Closure<Boolean>> beforeEval = [] // e.g. 数据补全
     List<Closure> afterEval = []
@@ -20,7 +26,7 @@ class RuleEngine {
      * @param rules
      * @param facts
      */
-    void fire(Rules rules, Map<String, Object> facts) {
+    void fire(Rules rules, Map<String, Object> facts, Options opts = null) {
         def delegate = makeDelegate(facts)
 
         rules?.any { rule ->
@@ -35,13 +41,13 @@ class RuleEngine {
                     rule._exec.delegate = delegate
                     rule._exec.call facts // call 同上
                     afterExec.each { it.delegate = delegate; it(rule, facts, null) }
-                    if (skipOnApplied) return true
+                    if (opts?.skipOnApplied) return true
                 } catch (Exception e) {
                     afterExec.each { it.delegate = delegate; it(rule, facts, e) }
-                    if (skipOnFailed) return true
+                    if (opts?.skipOnFailed) return true
                 }
             } else {
-                if (skipOnIgnored) return true
+                if (opts?.skipOnIgnored) return true
             }
 
             false

@@ -35,9 +35,8 @@ class GShell implements ApplicationContextAware {
         // 1. 配置 AST 方案
         // e.g. 以 Bean 结尾的对象自动添加 @ToString ASTTransform
         // sourceAwareCustomizer.baseNameValidator = { it.endsWith 'Bean' }
-        def importer = new ImportCustomizer()                   // TODO 配置自动导入
-        def secure = new SecureASTCustomizer()         // TODO 配置安全策略
-        // 加入黑白名单
+        def importer = new ImportCustomizer()          // TODO 配置自动导入
+        def secure = new SecureASTCustomizer()         // TODO 配置安全策略, 黑白名单
         secure.indirectImportCheckEnabled = true
 
         conf.addCompilationCustomizers CompilationUtils.FORBIDDEN_SYSTEM_EXIT
@@ -106,7 +105,7 @@ class GShell implements ApplicationContextAware {
     }
 
     EvalResult eval(String code, Map bindings) {
-        Objects.requireNonNull(code)
+        assert code
         try {
             def ret = cacheEval(new Union(code), bindings, null)
             [ret: ret, out: null] as EvalResult
@@ -116,7 +115,7 @@ class GShell implements ApplicationContextAware {
     }
 
     EvalResult eval(URI uri, Map bindings) {
-        Objects.requireNonNull(uri)
+        assert uri
         try {
             def ret = cacheEval(new Union(uri), bindings, null)
             [ret: ret, out: null] as EvalResult
@@ -126,7 +125,7 @@ class GShell implements ApplicationContextAware {
     }
 
     EvalResult eval(String code, Map bindings, OutputStream out) {
-        Objects.requireNonNull(code)
+        assert code
         try {
             def ret = cacheEval(new Union(code), bindings, out)
             [out: out.toString(), ret: ret] as EvalResult
@@ -136,7 +135,7 @@ class GShell implements ApplicationContextAware {
     }
 
     EvalResult eval(URI uri, Map bindings, OutputStream out) {
-        Objects.requireNonNull(uri)
+        assert uri
         try {
             def ret = cacheEval(new Union(uri), bindings, out)
             [out: out.toString(), ret: ret] as EvalResult

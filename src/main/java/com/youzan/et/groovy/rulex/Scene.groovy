@@ -9,8 +9,10 @@ class Scene extends Rules {
     String _name = 'scene' + _i++
     String _code = ''
     String _desc = ''
+    Byte _type = (byte)0
 
     Scene name(String name) { _name = name; this }
     Scene code(String code) { _code = code; this }
     Scene desc(String desc) { _desc = desc; this }
+    Scene type(Integer type) { _type = type.byteValue(); this }
 }

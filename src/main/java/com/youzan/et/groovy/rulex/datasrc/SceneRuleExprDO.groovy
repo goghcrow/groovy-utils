@@ -8,7 +8,7 @@ import groovy.transform.CompileStatic
 class SceneRuleExprDO {
     Long id
     Long sceneRuleId
-    String exprVar
+    Long exprVar
     String exprOp
     String exprVal
 }

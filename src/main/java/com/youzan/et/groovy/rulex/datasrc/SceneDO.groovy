@@ -6,10 +6,6 @@ import groovy.transform.CompileStatic
 @Canonical
 @CompileStatic
 class SceneDO {
-    final static Byte skipOnApplied = (byte)1
-    final static Byte skipOnIgnored = (byte)2
-    final static Byte skipOnFailed = (byte)3
-
     Long id
     String appId
     String sceneName

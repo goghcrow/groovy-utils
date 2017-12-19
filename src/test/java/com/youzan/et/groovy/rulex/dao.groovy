@@ -1,11 +1,5 @@
 package com.youzan.et.groovy.rulex
 
-import com.youzan.et.groovy.rulex.datasrc.SceneActionDO
-import com.youzan.et.groovy.rulex.datasrc.SceneDAO
-import com.youzan.et.groovy.rulex.datasrc.SceneDO
-import com.youzan.et.groovy.rulex.datasrc.SceneRuleDO
-import com.youzan.et.groovy.rulex.datasrc.SceneRuleExprDO
-import com.youzan.et.groovy.rulex.datasrc.SceneVarDO
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
 
@@ -43,6 +37,6 @@ def selectStar(table, clazz) {
 //selectStar('et_scene_var', SceneVarDO)
 
 
-def dao = new SceneDAO()
+def dao = new SceneDS()
 println dao.getScenesByApp('et_xiaolv')
 println dao.getRulesByApp('et_xiaolv')

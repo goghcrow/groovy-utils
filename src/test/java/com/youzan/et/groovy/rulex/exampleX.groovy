@@ -25,6 +25,27 @@ static Rules scene(@DelegatesTo(Rules) Closure c) {
 }
 
 def exit = System.&exit
+
+def engineX() {
+    def ctx = new StaticApplicationContext()
+    ctx.registerSingleton('sceneDAO', SceneDS)
+    ctx.registerSingleton('ruleEngineX', RuleEngineX)
+    ctx.refresh()
+    ctx.getBean('ruleEngineX') as RuleEngineX
+}
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
+
+//println "({0} && ({1} || {2}))".findAll(/\{\d+\}/).collect { it[1..-2] as Long }
+//println "({0} && ({1} || {2}))".replaceAll(/\{\d+\}/) {
+//    [0: 'hello', 1: 'world', 2: 'xxx'][it[1..-2] as Integer]
+//}
+
+
+engineX().build()
+
+exit(1)
+
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 class HelloService {
@@ -39,7 +60,7 @@ class EmailService {
 }
 
 def ex = new RuleEngineX()
-def ctx = new StaticApplicationContext()
+ctx = new StaticApplicationContext()
 ctx.registerSingleton('helloServ', HelloService)
 ctx.registerSingleton('mailServ', EmailService)
 ex.ctx = ctx
@@ -56,27 +77,6 @@ ex.fire(scene {
 }, [id: 42, name: 'xiaofeng'])
 
 println ''
-/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
-
-
-def codeGen(Map<String, String> define) {
-    def sb = new StringBuffer()
-    "scene {\n" + define.inject(sb) { StringBuffer it, entry -> it.append """
-    rule {
-        when { $entry.key }
-        then { $entry.value }
-    }
-""" + "\n}"
-    }
-}
-
-new RuleEngineX().fire(
-        codeGen(['id == 42': 'println "hello"']),
-        [id: 42]
-)
-exit(1)
-
-
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 @Fact(name ='业务对象')

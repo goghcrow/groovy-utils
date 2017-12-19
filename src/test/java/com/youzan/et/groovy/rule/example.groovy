@@ -1,7 +1,7 @@
 package com.youzan.et.groovy.rule
 
 import com.youzan.et.groovy.rulex.RuleEngineX
-
+import com.youzan.et.groovy.rule.RuleEngine.Options
 
 static Rule rule(@DelegatesTo(Rule) Closure c) {
     def _rule = new Rule()
@@ -91,7 +91,7 @@ println '----------------------------------'
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
-new RuleEngine(skipOnApplied: true).fire(rules {
+new RuleEngine().fire(rules {
     rule {
         when { id == 42 }
         then { println 42 }
@@ -100,12 +100,12 @@ new RuleEngine(skipOnApplied: true).fire(rules {
         when { id % 2 == 0}
         then { assert false }
     }
-}, [id: 42])
+}, [id: 42], RuleEngine.skipOnApplied)
 println ''
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
-new RuleEngine(skipOnIgnored: true).fire(rules {
+new RuleEngine().fire(rules {
     rule {
         when { id != 42 }
         then { println 42 }
@@ -114,12 +114,12 @@ new RuleEngine(skipOnIgnored: true).fire(rules {
         when { id % 2 == 0 }
         then { assert false }
     }
-}, [id: 42])
+}, [id: 42], RuleEngine.skipOnIgnored)
 println ''
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
-new RuleEngine(skipOnFailed: true).fire(rules {
+new RuleEngine().fire(rules {
     rule {
         when { id == 42 }
         then { throw new RuntimeException() }
@@ -128,7 +128,7 @@ new RuleEngine(skipOnFailed: true).fire(rules {
         when { id % 2 == 0 }
         then { assert false }
     }
-}, [id: 42])
+}, [id: 42], RuleEngine.skipOnFailed)
 println ''
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */

@@ -3,13 +3,14 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rule.Rule
 import com.youzan.et.groovy.rule.RuleEngine
 import com.youzan.et.groovy.rule.Rules
-import com.youzan.et.groovy.rulex.datasrc.SceneDAO
-import com.youzan.et.groovy.shell.GShell
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.BeansException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
+
+import javax.annotation.Resource
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Spring集成
@@ -34,8 +35,12 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         }
     }
 
+    Map<Long, Scene> scenesTable = new ConcurrentHashMap()
+
     ApplicationContext ctx
-    SceneDAO sceneDAO
+
+    @Resource
+    SceneDS sceneDS
 
     void setApplicationContext(ApplicationContext appCtx) throws BeansException { ctx = appCtx }
 
@@ -45,64 +50,56 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         new Facts(ctx: ctx, facts: facts)
     }
 
+
     void build() {
-        Objects.requireNonNull(ctx)
+        assert ctx
         String appId = ctx.getApplicationName()
+        // TODO
+        appId = 'et_xiaolv'
         assert appId
 
-        sceneDAO.getScenesByApp(appId)
-        sceneDAO.getRulesByApp(appId)
-
         // TODO
+        if (!sceneDS) sceneDS = new SceneDS()
+
+        def scenes = sceneDS.getScenesByApp(appId)
+        def rules = sceneDS.getRulesByApp(appId)
+        def actCodes = sceneDS.getActionsCodesByRules(rules)
+        def actions = sceneDS.getActionsByCodes(actCodes)
+        def exprIds = sceneDS.getExprIdsByRules(rules)
+        def exprs = sceneDS.getRuleExprsByIds(exprIds)
+        def vars = sceneDS.getRuleVarsByIds(exprs.collect { it.exprVar })
+
+        def exprTbl = sceneDS.makeExprTable(vars, exprs)
+        sceneDS.compileExprs(rules, exprTbl)
+
+        scenes.each { scene ->
+            String dsl = SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
+            println dsl
+            def x = SceneBuilder.compile(dsl)
+            println x
+        }
+
     }
 
-    void fire(String define, Map<String, Object> facts) {
-        Objects.requireNonNull(define)
 
-        def rules = evalRules(define)
+
+    void fire(String define, Map<String, Object> facts, Options opts = null) {
+        assert define
+
+        def rules = SceneBuilder.compile(define)
         if (rules) {
-            fire(rules as Rules, facts)
+            fire(rules as Rules, facts, opts)
         }
     }
 
     Map<Rule, Boolean> check(String define, Map<String, Object> facts) {
-        Objects.requireNonNull(define)
+        assert define
 
-        def rules = evalRules(define)
+        def rules = SceneBuilder.compile(define)
         if (rules) {
             check(rules as Rules, facts)
         } else {
             [:]
-        }
-    }
-
-    @CompileStatic
-    abstract static class BaseScript extends Script {
-        @SuppressWarnings("GrMethodMayBeStatic")
-        Rule rule(@DelegatesTo(Rule) Closure c) {
-            def rule = new Rule()
-            rule.with c
-            rule
-        }
-
-        @SuppressWarnings("GrMethodMayBeStatic")
-        Scene scene(@DelegatesTo(Rules) Closure c) {
-            def _scene = new Scene()
-            _scene.with c
-            _scene
-        }
-    }
-
-    private static Rules evalRules(String rules) {
-        def shell = new GShell()
-        shell.conf.setScriptBaseClass BaseScript.name
-        def ret = shell.eval(rules)
-        if (ret.getOut()) log.info(ret.getOut())
-        if (ret.getRet() instanceof Rules) {
-            ret.getRet() as Rules
-        } else {
-            log.error("错误的规则定义: $rules\nRet: ${ret.getRet()}")
-            null
         }
     }
 }

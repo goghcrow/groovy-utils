@@ -43,13 +43,13 @@ fizzBuzzRules << rule {
     then { println 'the answer' }
 }
 
-def engine = new RuleEngine(skipOnApplied: true)
+def engine = new RuleEngine()
 
 (1..100).each {
     engine.fire(fizzBuzzRules, [
             num: it,
             name: "xiaofeng$it"
-    ])
+    ], RuleEngine.skipOnApplied)
 }
 
-// (1..100).each { println it; println engine.check(fizzBuzzRules, [num: it]) }
+(1..100).each { println it; println engine.check(fizzBuzzRules, [num: it]) }
