@@ -11,6 +11,7 @@ class RuleEngine {
         boolean skipOnFailed = false
     }
 
+    final static Options none = new Options()
     final static Options skipOnApplied = new Options(skipOnApplied: true)
     final static Options skipOnIgnored = new Options(skipOnIgnored: true)
     final static Options skipOnFailed = new Options(skipOnFailed: true)

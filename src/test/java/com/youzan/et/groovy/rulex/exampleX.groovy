@@ -30,6 +30,8 @@ def engineX() {
     def ctx = new StaticApplicationContext()
     ctx.registerSingleton('sceneDAO', SceneDS)
     ctx.registerSingleton('ruleEngineX', RuleEngineX)
+    ctx.registerSingleton('helloServ', HelloService)
+    ctx.registerSingleton('mailServ', EmailService)
     ctx.refresh()
     ctx.getBean('ruleEngineX') as RuleEngineX
 }
@@ -40,13 +42,6 @@ def engineX() {
 //println "({0} && ({1} || {2}))".replaceAll(/\{\d+\}/) {
 //    [0: 'hello', 1: 'world', 2: 'xxx'][it[1..-2] as Integer]
 //}
-
-
-engineX().build()
-
-exit(1)
-
-/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 class HelloService {
     void sayHello() { println 'hello' }
@@ -59,13 +54,26 @@ class EmailService {
     }
 }
 
-def ex = new RuleEngineX()
-ctx = new StaticApplicationContext()
-ctx.registerSingleton('helloServ', HelloService)
-ctx.registerSingleton('mailServ', EmailService)
-ex.ctx = ctx
+def x = engineX()
+x.load()
 
-ex.fire(scene {
+x.fire('scene_test', [id: 999])
+
+println ''
+println 999
+println x.check('scene_test', [id: 999])
+println 1
+println x.check('scene_test', [id: 1])
+println 42
+println x.check('scene_test', [id: 42])
+
+
+
+
+
+exit(1)
+
+engineX().fire(scene {
     rule {
         then {
             log.info 'logging...'
@@ -77,6 +85,8 @@ ex.fire(scene {
 }, [id: 42, name: 'xiaofeng'])
 
 println ''
+
+
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
 @Fact(name ='业务对象')

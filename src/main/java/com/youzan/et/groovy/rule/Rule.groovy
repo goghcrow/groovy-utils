@@ -35,5 +35,5 @@ class Rule implements Comparable<Rule> {
         else _name <=> other._name
     }
 
-    String toString() { "$_name-$_priority" }
+    String toString() { "$_name($_priority)" }
 }

@@ -50,17 +50,17 @@ class SceneBuilder {
         def sb = new StringBuffer(
                 """
 scene {
-    name '${scene.sceneName.replaceAll("'",'')}'
-    code '${scene.sceneCode.replaceAll("'",'')}'
-    desc '${scene.sceneDesc.replaceAll("'",'')}'
+    name '${scene.sceneName.replaceAll("'",'\\\'')}'
+    code '${scene.sceneCode.replaceAll("'",'\\\'')}'
+    desc '${scene.sceneDesc.replaceAll("'",'\\\'')}'
     type  ${scene.sceneType.byteValue()}
 """)
         rules.each {
             sb.append """
     rule {
-        name '${it.ruleName.replaceAll("'",'')}'
-        code '${it.ruleCode.replaceAll("'",'')}'
-        desc '${it.ruleDesc.replaceAll("'",'')}'
+        name '${it.ruleName.replaceAll("'",'\\\'')}'
+        code '${it.ruleCode.replaceAll("'",'\\\'')}'
+        desc '${it.ruleDesc.replaceAll("'",'\\\'')}'
         order ${it.priority}
         when { ${it.rule} }
         then { ${compileActs(it.actionsCode, actTbl)} }
@@ -76,13 +76,15 @@ scene {
         def shell = new GShell()
         shell.conf.setScriptBaseClass BaseScript.name
 
-        def ret = shell.eval(rules)
-        if (ret.getOut()) log.info(ret.getOut())
-        if (ret.getRet() instanceof Scene) {
-            ret.getRet() as Scene
+        def r = shell.eval(rules)
+        if (r.out) log.info(r.out)
+
+        if (r.ret instanceof Scene) {
+            r.ret as Scene
+        } else if(r.ret instanceof Exception) {
+            throw r.ret as Exception
         } else {
-            log.error("错误的规则定义: $rules\nRet: ${ret.getRet()}")
-            null
+            throw new RuntimeException("错误的规则定义")
         }
     }
 }

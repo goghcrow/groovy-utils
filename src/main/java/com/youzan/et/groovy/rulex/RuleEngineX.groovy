@@ -3,6 +3,9 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rule.Rule
 import com.youzan.et.groovy.rule.RuleEngine
 import com.youzan.et.groovy.rule.Rules
+import com.youzan.et.groovy.rulex.datasrc.SceneDO
+import com.youzan.et.groovy.rulex.datasrc.SceneRuleDO
+import com.youzan.et.groovy.rulex.datasrc.SceneType
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.BeansException
@@ -24,18 +27,18 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
             true
         }
         afterEval << { Rule rule, Map<String, Object> facts, boolean trigger ->
-            log.info("规则 ${rule._name} ${trigger ? '触发' : '拒绝'}" )
+            log.info("${trigger ? '触发' : '拒绝'} [${rule._name}]" )
         }
         afterExec << { Rule rule, Map<String, Object> facts, Exception ex ->
             if (ex) {
-                log.error("规则 ${rule._name} 执行失败", ex)
+                log.error("[${rule._name}] 执行失败", ex)
             } else {
-                log.info("规则 ${rule._name} 执行成功" )
+                log.info("[${rule._name}] 执行成功" )
             }
         }
     }
 
-    Map<Long, Scene> scenesTable = new ConcurrentHashMap()
+    Map<String, Scene> scenesTbl = new ConcurrentHashMap()
 
     ApplicationContext ctx
 
@@ -50,8 +53,11 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         new Facts(ctx: ctx, facts: facts)
     }
 
+    void load(Long sceneCode) {
+        // TODO
+    }
 
-    void build() {
+    void load() {
         assert ctx
         String appId = ctx.getApplicationName()
         // TODO
@@ -74,25 +80,46 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
         scenes.each { scene ->
             String dsl = SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
-            println dsl
-            def x = SceneBuilder.compile(dsl)
-            println x
-        }
+            log.info("加载规则\n$dsl")
 
+            try {
+                def compiled = SceneBuilder.compile(dsl)
+                scenesTbl.put(scene.sceneCode, compiled)
+            } catch (Exception e) {
+                log.error("错误的规则定义\n$dsl" , e)
+            }
+        }
     }
 
+    void fire(String sceneCode, Map<String, Object> facts) {
+        assert sceneCode
+        if (!scenesTbl.containsKey(sceneCode)) {
+            throw new RuntimeException("规则 $sceneCode 不存在")
+        }
 
+        def scene = scenesTbl.get(sceneCode) as Scene
+        def opts = SceneType.toRuleEngineOpts(scene._type)
+        fire(scene, facts, opts)
+    }
 
-    void fire(String define, Map<String, Object> facts, Options opts = null) {
+    Map<Rule, Boolean> check(String sceneCode, Map<String, Object> facts) {
+        assert sceneCode
+        if (!scenesTbl.containsKey(sceneCode)) {
+            throw new RuntimeException("规则 $sceneCode 不存在")
+        }
+
+        check(scenesTbl.get(sceneCode) as Rules, facts)
+    }
+
+    void fireDSL(String define, Map<String, Object> facts, Options opts = null) {
         assert define
-
         def rules = SceneBuilder.compile(define)
         if (rules) {
             fire(rules as Rules, facts, opts)
         }
     }
 
-    Map<Rule, Boolean> check(String define, Map<String, Object> facts) {
+    Map<Rule, Boolean> checkDSL(String define, Map<String, Object> facts) {
         assert define
 
         def rules = SceneBuilder.compile(define)

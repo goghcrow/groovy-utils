@@ -160,7 +160,7 @@ println check([id: 1])
 println check([id: 42])
 println ''
 
-check = new RuleEngineX().&check.curry('''
+check = new RuleEngineX().&checkDSL.curry('''
 scene {
     rule {
         when { id == 42 }
