@@ -7,10 +7,12 @@ import com.youzan.et.groovy.rulex.datasrc.SceneDO
 import com.youzan.et.groovy.rulex.datasrc.SceneRuleDO
 import com.youzan.et.groovy.shell.GShell
 import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
 
 @CompileStatic
 @Slf4j
+@PackageScope
 class SceneBuilder {
 
     @CompileStatic
@@ -72,7 +74,8 @@ scene {
     }
 
     static Scene compile(String rules) {
-        assert rules
+        if (rules == null) return null
+
         def shell = new GShell()
         shell.conf.setScriptBaseClass BaseScript.name
 

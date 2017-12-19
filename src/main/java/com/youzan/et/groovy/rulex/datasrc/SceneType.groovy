@@ -1,7 +1,8 @@
 package com.youzan.et.groovy.rulex.datasrc
 
-import static com.youzan.et.groovy.rule.RuleEngine.*
 import groovy.transform.CompileStatic
+
+import static com.youzan.et.groovy.rule.RuleEngine.*
 
 @CompileStatic
 enum SceneType {

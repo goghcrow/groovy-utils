@@ -1,4 +1,4 @@
-package com.youzan.et.groovy.rulex;
+package com.youzan.et.groovy.rulex.doc;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

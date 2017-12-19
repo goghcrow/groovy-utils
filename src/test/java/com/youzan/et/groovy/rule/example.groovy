@@ -160,17 +160,4 @@ println check([id: 1])
 println check([id: 42])
 println ''
 
-check = new RuleEngineX().&checkDSL.curry('''
-scene {
-    rule {
-        when { id == 42 }
-        then { println 'universal answer' }
-    }
-}
-''')
-
-println check([id: 1])
-println check([id: 42])
-println ''
-
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */

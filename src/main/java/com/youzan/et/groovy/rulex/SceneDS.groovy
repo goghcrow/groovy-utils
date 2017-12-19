@@ -1,18 +1,14 @@
 package com.youzan.et.groovy.rulex
 
-import com.youzan.et.groovy.rulex.datasrc.SceneActionDO
-import com.youzan.et.groovy.rulex.datasrc.SceneDO
-import com.youzan.et.groovy.rulex.datasrc.SceneRuleDO
-import com.youzan.et.groovy.rulex.datasrc.SceneRuleExprDO
-import com.youzan.et.groovy.rulex.datasrc.SceneVarDO
+import com.youzan.et.groovy.rulex.datasrc.*
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
-import groovy.transform.CompileStatic
+import groovy.transform.PackageScope
 
-import javax.annotation.Resource
 import javax.sql.DataSource
 
 //@CompileStatic
+@PackageScope
 class SceneDS {
 
     // static { GroovyRowResult.metaClass.toBean = this.&toBean }
@@ -31,9 +27,18 @@ class SceneDS {
     List<SceneDO> getScenesByApp(String appId) {
         assert appId != null
         def rows = db().rows("""
-SELECT * FROM et_scene WHERE app_id = $appId 
+SELECT * FROM et_scene WHERE app_id = $appId
 """)
         toBeans(rows, SceneDO)
+    }
+
+    SceneDO getSceneByCode(String appId, String sceneCode) {
+        assert appId != null
+        assert sceneCode != null
+        def row = db().firstRow("""
+SELECT * FROM et_scene WHERE app_id = $appId and scene_code = $sceneCode LIMIT 1
+""")
+        toBean(row, SceneDO)
     }
 
     List<SceneRuleDO> getRulesByApp(String appId) {
@@ -44,8 +49,17 @@ SELECT * FROM et_scene_rule WHERE app_id = $appId
         toBeans(rows, SceneRuleDO)
     }
 
+    List<SceneRuleDO> getRulesBySceneCode(String appId, String sceneCode) {
+        assert appId != null
+        assert sceneCode != null
+        def rows = db().rows("""
+SELECT * FROM et_scene_rule WHERE app_id = $appId and scene_code = $sceneCode
+""")
+        toBeans(rows, SceneRuleDO)
+    }
+
     List<SceneActionDO> getActionsByCodes(List<String> codes) {
-        if (!codes) []
+        if (!codes) return []
         def rows = db().rows("""
 SELECT * FROM et_scene_action WHERE action_code IN (${codes.collect{'?'}.join(',')})
 """, codes)
@@ -102,6 +116,7 @@ SELECT * FROM et_scene_var WHERE id IN (${ids.collect{'?'}.join(',')})
     }
 
     static <T> T toBean(GroovyRowResult row, Class<T> kind) {
+        if (row == null) return null
         def bean = kind.newInstance()
         row.each {
             def k = (it.key as String).replaceAll(/_\w/){ strs ->

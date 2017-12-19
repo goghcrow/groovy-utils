@@ -2,6 +2,8 @@ package com.youzan.et.groovy.rulex
 
 import com.youzan.et.groovy.rule.Rule
 import com.youzan.et.groovy.rule.Rules
+import com.youzan.et.groovy.rulex.doc.Fact
+import com.youzan.et.groovy.rulex.doc.FactField
 import org.springframework.context.support.StaticApplicationContext
 
 import java.lang.annotation.Annotation
@@ -55,7 +57,7 @@ class EmailService {
 }
 
 def x = engineX()
-x.load()
+x.refresh()
 
 x.fire('scene_test', [id: 999])
 
@@ -68,8 +70,16 @@ println 42
 println x.check('scene_test', [id: 42])
 
 
+println ''
+println ''
+println ''
+//def dsl = x.render('scene_test')
+//println dsl
+//println x.compile(dsl)
 
+//x.refresh('scene_test')
 
+println x.test('scene_test', [id: 42], false)
 
 exit(1)
 
