@@ -12,6 +12,6 @@ class Facts {
     ApplicationContext ctx
     @Delegate Map<String, Object> facts
     def <T> T make(String name) { (T)ctx.getBean(name) }
-    def <T> T make(Class<T> kind ) { ctx.getBean(kind) }
+    def <T> T make(Class<T> kind) { ctx.getBean(kind) }
     def <T> T make(String name, Class<T> kind) { ctx.getBean(name, kind) }
 }
