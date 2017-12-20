@@ -11,7 +11,7 @@ class Rule implements Comparable<Rule> {
     String _code = ''
     String _desc = ''
     int _priority = 42
-    Closure<Boolean> _eval = { println "[$this] To be, or not to be: that is the question."; true }
+    Closure<Boolean> _eval = { println "[$this] To be, or not to be: that is the question."; false }
     Closure _exec = { }
 
     Rule name(String name) { _name = name; this }

@@ -40,11 +40,13 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
     String appName
 
-    private
-    Map<String, Scene> scenesTbl = new ConcurrentHashMap()
+    SceneService sceneService
 
     private
     SceneDS sceneDS
+
+    private
+    Map<String, Scene> scenesTbl = new ConcurrentHashMap()
 
     private
     static ApplicationContext ctx
@@ -64,6 +66,9 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         if (!sceneDS) {
             sceneDS = new SceneDS(ds: dataSource)
         }
+        if (!sceneService) {
+            sceneService = new SceneService(sceneDS: sceneDS, appName: appName)
+        }
     }
 
     /**
@@ -79,14 +84,14 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         }
 
         def rules = sceneDS.getRulesByApp(appName)
-        def actCodes = sceneDS.getActionsCodesByRules(rules)
+        def actCodes = sceneDS.getActionsCodesByRules(rules) // TODO test empty actCodes
         def actions = sceneDS.getActionsByCodes(actCodes)
         def exprIds = sceneDS.getExprIdsByRules(rules)
-        def exprs = sceneDS.getRuleExprsByIds(exprIds)
+        def exprs = sceneDS.getRuleExprsByIds(exprIds) // TODO 同理
         def vars = sceneDS.getRuleVarsByIds(exprs.collect { it.exprVar })
         def exprTbl = sceneDS.makeExprTable(vars, exprs)
-        sceneDS.compileExprs(rules, exprTbl)
 
+        SceneBuilder.compileExprs(rules, exprTbl)
         scenes.each { scene ->
             String dsl = SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
             log.info("加载规则\n$dsl")
@@ -135,8 +140,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         def exprs = sceneDS.getRuleExprsByIds(exprIds)
         def vars = sceneDS.getRuleVarsByIds(exprs.collect { it.exprVar })
         def exprTbl = sceneDS.makeExprTable(vars, exprs)
-        sceneDS.compileExprs(rules, exprTbl)
-
+        SceneBuilder.compileExprs(rules, exprTbl)
         return SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
     }
 

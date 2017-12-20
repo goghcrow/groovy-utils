@@ -72,6 +72,14 @@ SELECT * FROM et_scene_var WHERE id IN (${ids.collect{'?'}.join(',')})
         toBeans(rows, SceneVarDO)
     }
 
+    def insertScene(SceneDO scene) {
+        if (!scene) return false
+        db().execute("""
+INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VALUES
+( ?.appId, ?.sceneName, ?.sceneCode, ?.sceneDesc, ?.sceneType )
+""", scene)
+    }
+
     static List<String> getActionsCodesByRules (List<SceneRuleDO> rules) {
         if (!rules) return []
         rules.collect{
@@ -91,17 +99,6 @@ SELECT * FROM et_scene_var WHERE id IN (${ids.collect{'?'}.join(',')})
         exprs.collectEntries {
             assert varMap[it.exprVar] // TODO op: in?
             [(it.id): "${varMap[it.exprVar]?.varName} ${it.exprOp} ${it.exprVal}"]
-        }
-    }
-
-    static void compileExprs(List<SceneRuleDO> rules, Map<Long, String> exprTable) {
-        rules.each {
-            if (it.ruleType == SceneRuleDO.expr) {
-                it.rule = it.rule.replaceAll(/\{\d+\}/) {
-                    assert exprTable[it[1..-2] as Long]
-                    exprTable[it[1..-2] as Long]
-                }
-            }
         }
     }
 
