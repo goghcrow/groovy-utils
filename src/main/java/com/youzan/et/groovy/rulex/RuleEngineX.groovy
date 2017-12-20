@@ -78,7 +78,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         }
 
         def rules = sceneService.getRulesByApp(appName)
-        def actions = sceneService.getActions(rules)
+        def actions = sceneService.getActionsByRules(rules)
 
         scenes.each { scene ->
             String dsl = SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
@@ -122,7 +122,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         if (scene == null) return null
 
         def rules = sceneService.getRulesByAppCode(appName, sceneCode)
-        def actions = sceneService.getActions(rules)
+        def actions = sceneService.getActionsByRules(rules)
 
         return SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
     }

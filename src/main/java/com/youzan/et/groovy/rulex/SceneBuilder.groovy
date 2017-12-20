@@ -50,12 +50,12 @@ class SceneBuilder {
 
     private static String compileActs(String actionCodes, Map<String, SceneActionDO> actTable) {
         assert actionCodes != null
-        actionCodes.tokenize(',')
+        '\n\t\t\t\t' + actionCodes.tokenize(',')
                 .findAll { it != null }
                 .collect { it.trim() }
                 .collect {
             actTable[it]?.action
-        }.join('; ')
+        }.join(';\n\t\t\t\t') + '\n\t\t'
     }
 
     static String render(SceneDO scene,

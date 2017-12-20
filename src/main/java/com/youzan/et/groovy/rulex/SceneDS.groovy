@@ -15,10 +15,18 @@ class SceneDS {
         new Sql(ds)
     }
 
+    List<String> getApps() {
+        db().rows('''
+SELECT DISTINCT app_id FROM et_scene
+WHERE deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+''').collect { it.app_id }
+    }
+
     List<SceneDO> getScenesByApp(String appId) {
         assert appId != null
         def rows = db().rows("""
 SELECT * FROM et_scene WHERE app_id = $appId
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """)
         toBeans(rows, SceneDO)
     }
@@ -27,7 +35,10 @@ SELECT * FROM et_scene WHERE app_id = $appId
         assert appId != null
         assert sceneCode != null
         def row = db().firstRow("""
-SELECT * FROM et_scene WHERE app_id = $appId and scene_code = $sceneCode LIMIT 1
+SELECT * FROM et_scene WHERE 
+app_id = $appId and scene_code = $sceneCode
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+LIMIT 1
 """)
         toBean(row, SceneDO)
     }
@@ -36,6 +47,8 @@ SELECT * FROM et_scene WHERE app_id = $appId and scene_code = $sceneCode LIMIT 1
         assert appId != null
         def rows = db().rows("""
 SELECT * FROM et_scene_rule WHERE app_id = $appId 
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+ORDER BY priority
 """)
         toBeans(rows, SceneRuleDO)
     }
@@ -44,7 +57,9 @@ SELECT * FROM et_scene_rule WHERE app_id = $appId
         assert appId != null
         assert sceneCode != null
         def rows = db().rows("""
-SELECT * FROM et_scene_rule WHERE app_id = $appId and scene_code = $sceneCode
+SELECT * FROM et_scene_rule WHERE app_id = $appId AND scene_code = $sceneCode 
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+ORDER BY priority 
 """)
         toBeans(rows, SceneRuleDO)
     }
@@ -53,6 +68,7 @@ SELECT * FROM et_scene_rule WHERE app_id = $appId and scene_code = $sceneCode
         if (!codes) return []
         def rows = db().rows("""
 SELECT * FROM et_scene_action WHERE action_code IN (${codes.collect{'?'}.join(',')})
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """, codes)
         toBeans(rows, SceneActionDO)
     }
@@ -61,6 +77,7 @@ SELECT * FROM et_scene_action WHERE action_code IN (${codes.collect{'?'}.join(',
         if (!ids) return []
         def rows = db().rows("""
 SELECT * FROM et_scene_rule_expr WHERE id IN (${ids.collect {'?'}.join(',')})
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """, ids)
         toBeans(rows, SceneRuleExprDO)
     }
@@ -69,16 +86,96 @@ SELECT * FROM et_scene_rule_expr WHERE id IN (${ids.collect {'?'}.join(',')})
         if (!ids) return []
         def rows = db().rows("""
 SELECT * FROM et_scene_var WHERE id IN (${ids.collect{'?'}.join(',')})
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """, ids)
         toBeans(rows, SceneVarDO)
     }
 
-    def insertScene(SceneDO scene) {
-        if (!scene) return false
+    List<SceneVarDO> getRuleVarsByAppCode(String appId, String sceneCode) {
+        if (!appId || !sceneCode) return []
+        def rows = db().rows("""
+SELECT * FROM et_scene_var WHERE app_id = $appId AND scene_code = $sceneCode
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+""")
+        toBeans(rows, SceneVarDO)
+    }
+
+    boolean insertScene(SceneDO scene) {
+        if (scene == null
+                || scene.appId == null
+                || scene.appId.isAllWhitespace()
+                || scene.sceneName == null
+                || scene.sceneName.isAllWhitespace()
+                || scene.sceneCode == null
+                || scene.sceneCode.isAllWhitespace()
+                || scene.sceneDesc == null
+                || scene.sceneDesc.isAllWhitespace()
+                || scene.sceneType == null) return false
         db().execute("""
-INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VALUES
-( ?.appId, ?.sceneName, ?.sceneCode, ?.sceneDesc, ?.sceneType )
+INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VALUES ( 
+  ?.appId, ?.sceneName, ?.sceneCode, ?.sceneDesc, ?.sceneType 
+)
 """, scene)
+    }
+
+    // 只能更新 name/desc/type 必须同时更新
+    boolean updateScene(SceneDO scene) {
+        if (!scene || !scene.id
+                || scene.sceneName == null || scene.sceneName.isAllWhitespace()
+                || scene.sceneDesc == null || scene.sceneDesc.isAllWhitespace()
+                || scene.sceneType == null
+        ) return false
+
+        db().execute("""
+update et_scene set  
+scene_name = ${scene.sceneName},
+scene_desc = ${scene.sceneDesc},
+scene_type = ${scene.sceneType}
+where id = ${scene.id}
+""")
+    }
+
+    boolean deleteVar(Long id) {
+        // TODO disabled
+    }
+
+    boolean deleteScene(Long id) {
+        // TODO disabled
+    }
+
+    boolean insertVar(SceneVarDO var) {
+        // TODO 检查 sceneId 与 sceneCode 是否存在 !!!
+        if (var == null
+                || var.appId == null
+                || var.appId.isAllWhitespace()
+                || var.sceneId == null
+                || var.sceneCode == null
+                || var.sceneCode.isAllWhitespace()
+                || var.varName == null
+                || var.varName.isAllWhitespace()
+                || var.varDesc == null
+                || var.varDesc.isAllWhitespace()
+        ) return false
+        db().execute("""
+INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_desc) VALUES (
+  ?.appId, ?.sceneId, ?.sceneCode, ?.varName, ?.varDesc
+)
+""", var)
+    }
+
+    // 只能更新 name/desc 必须同时更新
+    boolean updateVar(SceneVarDO var) {
+        if (!var || !var.id || var.varName == null
+                || var.varName.isAllWhitespace()
+                || var.varDesc == null
+                || var.varDesc.isAllWhitespace()) return false
+
+        db().execute("""
+update et_scene_var set 
+var_name = ${var.varName}, 
+var_desc = ${var.varDesc} 
+where id = ${var.id};
+""")
     }
 
     static List<String> getActionsCodesByRules (List<SceneRuleDO> rules) {
@@ -113,13 +210,6 @@ INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VA
             bean[k] = it.value
         }
         bean
-// 静态编译有问题
-//        row.inject(kind.newInstance(), { T ins, Map.Entry<String, Object> entry ->
-//            ins[(entry.key as String).replaceAll(/_\w/){ List<String> strs ->
-//                (strs[1] as String).toUpperCase()
-//            }] = entry.value
-//            ins
-//        })
     }
 
     static <T> List<T> toBeans(List<GroovyRowResult> rows, Class<T> kind) {

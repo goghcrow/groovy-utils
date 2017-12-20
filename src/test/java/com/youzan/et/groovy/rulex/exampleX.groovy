@@ -9,25 +9,27 @@ import org.springframework.context.support.StaticApplicationContext
 
 import java.lang.annotation.Annotation
 
+def exit = System.&exit
+
+
 static Rule rule(@DelegatesTo(Rule) Closure c) {
-    def _rule = new Rule()
-    _rule.with c
-    _rule
+    def rule = new Rule()
+    rule.with c
+    rule
 }
 
 static Rules rules(@DelegatesTo(Rules) Closure c) {
-    def _rules = new Rules()
-    _rules.with c
-    _rules
+    def rules = new Rules()
+    rules.with c
+    rules
 }
 
 static Rules scene(@DelegatesTo(Rules) Closure c) {
-    def _scene = new Scene()
-    _scene.with c
-    _scene
+    def scene = new Scene()
+    scene.with c
+    scene
 }
 
-def exit = System.&exit
 
 static def engineX() {
     def ds = new MysqlDataSource()
@@ -48,13 +50,15 @@ static def engineX() {
 
     x
 }
-/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
-
 
 //println "({0} && ({1} || {2}))".findAll(/\{\d+\}/).collect { it[1..-2] as Long }
 //println "({0} && ({1} || {2}))".replaceAll(/\{\d+\}/) {
 //    [0: 'hello', 1: 'world', 2: 'xxx'][it[1..-2] as Integer]
 //}
+
+
+/* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
+
 
 class HelloService {
     void sayHello() { println 'hello' }
@@ -139,15 +143,6 @@ class Utils {
         return findAnnotation(targetAnnotation, annotatedType) != null;
     }
 }
-
-
-Biz.getDeclaredFields().each {
-    it.getAnnotation(FactField.class)
-}
-//println Utils.findAnnotation(FactField.class, Biz.getDeclaredField('name').class)
-
-//def anno = Utils.findAnnotation(Fact.class, Biz)
-//anno.name()
 
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
