@@ -11,5 +11,6 @@ class SceneVarDO extends AbstractDO {
     Long sceneId
     String sceneCode
     String varName
+    String varType
     String varDesc
 }

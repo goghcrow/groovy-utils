@@ -3,7 +3,6 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rulex.datasrc.*
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
-import groovy.transform.CompileStatic
 
 import javax.sql.DataSource
 
@@ -27,6 +26,8 @@ WHERE deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         def rows = db().rows("""
 SELECT * FROM et_scene WHERE app_id = $appId
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+ORDER BY id
+-- ORDER BY scene_status DESC, created_at
 """)
         toBeans(rows, SceneDO)
     }
@@ -41,6 +42,16 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 LIMIT 1
 """)
         toBean(row, SceneDO)
+    }
+
+    SceneRuleDO getRuleById(Long id) {
+        assert id != null
+        def row = db().firstRow("""
+SELECT * FROM et_scene_rule WHERE id = $id  
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+LIMIT 1
+""")
+        toBean(row, SceneRuleDO)
     }
 
     List<SceneRuleDO> getRulesByApp(String appId) {
@@ -118,6 +129,16 @@ INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VA
 """, scene)
     }
 
+    boolean updateSceneStatus(String sceneCode, Byte status) {
+        if (sceneCode == null || sceneCode.isAllWhitespace() || status == null) return false
+        db().execute("""
+update et_scene set  
+scene_status = $status
+where scene_code = $sceneCode
+limit 1
+""")
+    }
+
     // 只能更新 name/desc/type 必须同时更新
     boolean updateScene(SceneDO scene) {
         if (!scene || !scene.id
@@ -132,6 +153,7 @@ scene_name = ${scene.sceneName},
 scene_desc = ${scene.sceneDesc},
 scene_type = ${scene.sceneType}
 where id = ${scene.id}
+limit 1
 """)
     }
 
@@ -153,12 +175,14 @@ where id = ${scene.id}
                 || var.sceneCode.isAllWhitespace()
                 || var.varName == null
                 || var.varName.isAllWhitespace()
+                || var.varType == null
+                || var.varType.isAllWhitespace()
                 || var.varDesc == null
                 || var.varDesc.isAllWhitespace()
         ) return false
         db().execute("""
-INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_desc) VALUES (
-  ?.appId, ?.sceneId, ?.sceneCode, ?.varName, ?.varDesc
+INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_type, var_desc) VALUES (
+  ?.appId, ?.sceneId, ?.sceneCode, ?.varName, ?.varType, ?.varDesc
 )
 """, var)
     }
@@ -167,21 +191,33 @@ INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_desc) VALU
     boolean updateVar(SceneVarDO var) {
         if (!var || !var.id || var.varName == null
                 || var.varName.isAllWhitespace()
+                || var.varType == null
+                || var.varType.isAllWhitespace()
                 || var.varDesc == null
                 || var.varDesc.isAllWhitespace()) return false
 
         db().execute("""
 update et_scene_var set 
-var_name = ${var.varName}, 
+var_name = ${var.varName},
+var_type = ${var.varType}, 
 var_desc = ${var.varDesc} 
 where id = ${var.id};
 """)
     }
 
+    static List<String> getActionsCodesByRule (SceneRuleDO rule) {
+        if (!rule) return []
+        rule.actionsCode.tokenize(',')
+                .findAll { it != null && !it.isAllWhitespace() }
+                .collect { it.trim() }  as List<String>
+    }
+
     static List<String> getActionsCodesByRules (List<SceneRuleDO> rules) {
         if (!rules) return []
         rules.collect{
-            it.actionsCode.tokenize(',').findAll { it != null }.collect { it.trim() }
+            it.actionsCode.tokenize(',')
+                    .findAll { it != null && !it.isAllWhitespace() }
+                    .collect { it.trim() }
         }.flatten().unique() as List<String>
     }
 

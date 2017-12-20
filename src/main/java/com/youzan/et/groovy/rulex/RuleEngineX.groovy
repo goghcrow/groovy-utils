@@ -3,6 +3,7 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rule.Rule
 import com.youzan.et.groovy.rule.RuleEngine
 import com.youzan.et.groovy.rule.Rules
+import com.youzan.et.groovy.rulex.datasrc.SceneRuleDO
 import com.youzan.et.groovy.rulex.datasrc.SceneType
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -71,7 +72,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
     void refresh() {
         envCheck()
 
-        def scenes = sceneService.getScenesByApp(appName)
+        def scenes = sceneService.getScenesByApp(appName).findAll { it.sceneStatus }
         if (!scenes) {
             log.info("未获取到应用($appName)规则场景")
             return
@@ -87,29 +88,57 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
             try {
                 def compiled = SceneBuilder.compile(dsl)
                 scenesTbl.put(scene.sceneCode, compiled)
+                log.info("场景 ${scene.sceneCode} 加载成功")
             } catch (Exception e) {
-                log.error("错误的规则定义\n$dsl" , e)
+                log.error("场景 ${scene.sceneCode} 加载失败, 错误的规则定义\n$dsl" , e)
             }
         }
     }
 
     /**
-     * 刷新场景规则
+     * 开启\关闭\刷新场景规则
      * @param sceneCode
      */
-    void refresh(String sceneCode) {
+    void refresh(String sceneCode, boolean enabled) {
         envCheck()
 
-        def dsl = render(sceneCode)
-        def scene = compile(dsl)
-        if (scene == null) {
-            throw new RuntimeException("错误的规则定义:\n$dsl")
+        if (enabled) {
+            def dsl = render(sceneCode)
+            def scene = compile(dsl)
+            if (scene == null) {
+                throw new RuntimeException("错误的规则定义:\n$dsl")
+            }
+            if (scenesTbl.containsKey(sceneCode)) {
+                log.warn("场景 $sceneCode 更新")
+            } else {
+                log.warn("场景 $sceneCode 开启")
+            }
+            scenesTbl.put(sceneCode, scene)
+        } else {
+            if (scenesTbl.containsKey(sceneCode)) {
+                log.warn("场景 $sceneCode 关闭")
+                scenesTbl.remove(sceneCode)
+            }
         }
-        scenesTbl.put(scene._code, scene)
     }
 
     /**
-     * 从数据库读取规则渲染 DSL
+     * 从数据库读取规则渲染 单条规则DSL
+     * @param sceneCode
+     * @return
+     */
+    String render(Long ruleId) {
+        envCheck()
+
+        if (ruleId == null) return null
+        SceneRuleDO rule = sceneService.getRuleById(ruleId)
+        def actions = sceneService.getActionsByRule(rule)
+
+        SceneBuilder.render(rule, actions)
+    }
+
+    /**
+     * 从数据库读取规则渲染 场景DSL
      * @param sceneCode
      * @return
      */
@@ -124,7 +153,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         def rules = sceneService.getRulesByAppCode(appName, sceneCode)
         def actions = sceneService.getActionsByRules(rules)
 
-        return SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
+        SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
     }
 
     /**
@@ -150,7 +179,8 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
         if (sceneCode == null) return
         if (!scenesTbl.containsKey(sceneCode)) {
-            throw new RuntimeException("场景未定义(code=$sceneCode)")
+            log.warn("场景 $sceneCode 未定义或未开启")
+            return
         }
 
         def scene = scenesTbl.get(sceneCode) as Scene
@@ -169,7 +199,8 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
         if (sceneCode == null) return null
         if (!scenesTbl.containsKey(sceneCode)) {
-            throw new RuntimeException("场景未定义(code=$sceneCode)")
+            log.warn("场景 $sceneCode 未定义或未开启")
+            return [:]
         }
 
         check(scenesTbl.get(sceneCode) as Rules, facts)

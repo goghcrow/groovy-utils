@@ -25,8 +25,18 @@ class SceneService {
         sceneDS.getScenesByApp(appName)
     }
 
+    boolean switchScene(String sceneCode, boolean flag) {
+        if (sceneCode == null || sceneCode.isAllWhitespace()) return false
+        sceneDS.updateSceneStatus(sceneCode, flag ? SceneDO.enabled : SceneDO.disabled)
+    }
+
     SceneDO getSceneByAppCode(String appName, String sceneCode) {
         sceneDS.getSceneByCode(appName, sceneCode)
+    }
+
+    SceneRuleDO getRuleById(Long ruleId) {
+        if (ruleId == null) return null
+        getExpressions([sceneDS.getRuleById(ruleId)]).first()
     }
 
     List<SceneRuleDO> getRulesByApp(String appName) {
@@ -39,6 +49,10 @@ class SceneService {
 
     List<SceneRuleDO> getRulesByAppCode(String appName, String sceneCode) {
         getExpressions(sceneDS.getRulesBySceneCode(appName, sceneCode))
+    }
+
+    List<SceneActionDO> getActionsByRule(SceneRuleDO rule) {
+        sceneDS.getActionsByCodes(sceneDS.getActionsCodesByRule(rule))
     }
 
     List<SceneActionDO> getActionsByRules(List<SceneRuleDO> rules) {

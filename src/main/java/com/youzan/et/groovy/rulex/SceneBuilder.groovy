@@ -58,6 +58,19 @@ class SceneBuilder {
         }.join(';\n\t\t\t\t') + '\n\t\t'
     }
 
+    static String render(SceneRuleDO rule, List<SceneActionDO> actions) {
+        Map<String, SceneActionDO> actTbl = actions.collectEntries { [(it.actionCode): it]}
+"""rule {
+    name '${rule.ruleName.replaceAll("'",'\\\'')}'
+    code '${rule.ruleCode.replaceAll("'",'\\\'')}'
+    desc '${rule.ruleDesc.replaceAll("'",'\\\'')}'
+    order ${rule.priority}
+    when { ${rule.rule} }
+    then { ${compileActs(rule.actionsCode, actTbl)} }
+}
+"""
+    }
+
     static String render(SceneDO scene,
                          List<SceneRuleDO> rules,
                          List<SceneActionDO> actions
@@ -65,8 +78,7 @@ class SceneBuilder {
         Map<String, SceneActionDO> actTbl = actions.collectEntries { [(it.actionCode): it]}
 
         def sb = new StringBuffer(
-                """
-scene {
+                """scene {
     name '${scene.sceneName.replaceAll("'",'\\\'')}'
     code '${scene.sceneCode.replaceAll("'",'\\\'')}'
     desc '${scene.sceneDesc.replaceAll("'",'\\\'')}'
