@@ -37,7 +37,6 @@ static def engineX() {
 
 
     def ctx = new StaticApplicationContext()
-    ctx.registerSingleton('sceneDAO', SceneDS)
     ctx.registerSingleton('ruleEngineX', RuleEngineX)
     ctx.registerSingleton('helloServ', HelloService)
     ctx.registerSingleton('mailServ', EmailService)

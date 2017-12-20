@@ -3,6 +3,7 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rulex.datasrc.*
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 
 import javax.sql.DataSource
 

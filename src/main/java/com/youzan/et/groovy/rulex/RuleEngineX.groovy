@@ -43,9 +43,6 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
     SceneService sceneService
 
     private
-    SceneDS sceneDS
-
-    private
     Map<String, Scene> scenesTbl = new ConcurrentHashMap()
 
     private
@@ -63,11 +60,8 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         if (!dataSource) {
             throw new RuntimeException('请为 RuleEngineX Bean 配置 dataSource 属性')
         }
-        if (!sceneDS) {
-            sceneDS = new SceneDS(ds: dataSource)
-        }
         if (!sceneService) {
-            sceneService = new SceneService(sceneDS: sceneDS, appName: appName)
+            sceneService = new SceneService(sceneDS: new SceneDS(ds: dataSource), appName: appName)
         }
     }
 
@@ -77,21 +71,15 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
     void refresh() {
         envCheck()
 
-        def scenes = sceneDS.getScenesByApp(appName)
+        def scenes = sceneService.getScenesByApp(appName)
         if (!scenes) {
             log.info("未获取到应用($appName)规则场景")
             return
         }
 
-        def rules = sceneDS.getRulesByApp(appName)
-        def actCodes = sceneDS.getActionsCodesByRules(rules) // TODO test empty actCodes
-        def actions = sceneDS.getActionsByCodes(actCodes)
-        def exprIds = sceneDS.getExprIdsByRules(rules)
-        def exprs = sceneDS.getRuleExprsByIds(exprIds) // TODO 同理
-        def vars = sceneDS.getRuleVarsByIds(exprs.collect { it.exprVar })
-        def exprTbl = sceneDS.makeExprTable(vars, exprs)
+        def rules = sceneService.getRulesByApp(appName)
+        def actions = sceneService.getActions(rules)
 
-        SceneBuilder.compileExprs(rules, exprTbl)
         scenes.each { scene ->
             String dsl = SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
             log.info("加载规则\n$dsl")
@@ -130,17 +118,12 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
         if (sceneCode == null) return null
 
-        def scene = sceneDS.getSceneByCode(appName, sceneCode)
+        def scene = sceneService.getSceneByAppCode(appName, sceneCode)
         if (scene == null) return null
 
-        def rules = sceneDS.getRulesBySceneCode(appName, sceneCode)
-        def actCodes = sceneDS.getActionsCodesByRules(rules)
-        def actions = sceneDS.getActionsByCodes(actCodes)
-        def exprIds = sceneDS.getExprIdsByRules(rules)
-        def exprs = sceneDS.getRuleExprsByIds(exprIds)
-        def vars = sceneDS.getRuleVarsByIds(exprs.collect { it.exprVar })
-        def exprTbl = sceneDS.makeExprTable(vars, exprs)
-        SceneBuilder.compileExprs(rules, exprTbl)
+        def rules = sceneService.getRulesByAppCode(appName, sceneCode)
+        def actions = sceneService.getActions(rules)
+
         return SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
     }
 
