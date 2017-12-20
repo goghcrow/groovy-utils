@@ -1,5 +1,6 @@
 package com.youzan.et.groovy.rulex
 
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource
 import com.youzan.et.groovy.rule.Rule
 import com.youzan.et.groovy.rule.Rules
 import com.youzan.et.groovy.rulex.doc.Fact
@@ -28,14 +29,25 @@ static Rules scene(@DelegatesTo(Rules) Closure c) {
 
 def exit = System.&exit
 
-def engineX() {
+static def engineX() {
+    def ds = new MysqlDataSource()
+    ds.url = 'jdbc:mysql://127.0.0.1:3306/et_engine?useServerPrepStmts=false&zeroDateTimeBehavior=convertToNull&characterEncoding=utf8'
+    ds.user = 'root'
+    ds.password = '123456'
+
+
     def ctx = new StaticApplicationContext()
     ctx.registerSingleton('sceneDAO', SceneDS)
     ctx.registerSingleton('ruleEngineX', RuleEngineX)
     ctx.registerSingleton('helloServ', HelloService)
     ctx.registerSingleton('mailServ', EmailService)
     ctx.refresh()
-    ctx.getBean('ruleEngineX') as RuleEngineX
+    def x = ctx.getBean('ruleEngineX') as RuleEngineX
+
+    x.dataSource = ds
+    x.appName = 'et_xiaolv'
+
+    x
 }
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
