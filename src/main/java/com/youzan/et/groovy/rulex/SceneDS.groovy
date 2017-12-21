@@ -22,7 +22,8 @@ WHERE deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
     }
 
     List<SceneDO> getScenesByApp(String appId) {
-        assert appId != null
+        if (appId == null || appId.isAllWhitespace()) return []
+
         def rows = db().rows("""
 SELECT * FROM et_scene WHERE app_id = $appId
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -33,8 +34,9 @@ ORDER BY id
     }
 
     SceneDO getSceneByCode(String appId, String sceneCode) {
-        assert appId != null
-        assert sceneCode != null
+        if (appId == null || appId.isAllWhitespace()
+        || sceneCode == null || sceneCode.isAllWhitespace()) return null
+
         def row = db().firstRow("""
 SELECT * FROM et_scene WHERE 
 app_id = $appId and scene_code = $sceneCode
@@ -45,7 +47,8 @@ LIMIT 1
     }
 
     SceneRuleDO getRuleById(Long id) {
-        assert id != null
+        if (id == null) return null
+
         def row = db().firstRow("""
 SELECT * FROM et_scene_rule WHERE id = $id  
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -55,7 +58,8 @@ LIMIT 1
     }
 
     List<SceneRuleDO> getRulesByApp(String appId) {
-        assert appId != null
+        if (appId == null || appId.isAllWhitespace()) return []
+
         def rows = db().rows("""
 SELECT * FROM et_scene_rule WHERE app_id = $appId 
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -65,8 +69,9 @@ ORDER BY priority
     }
 
     List<SceneRuleDO> getRulesBySceneCode(String appId, String sceneCode) {
-        assert appId != null
-        assert sceneCode != null
+        if (appId == null || appId.isAllWhitespace()
+                || sceneCode == null || sceneCode.isAllWhitespace()) return []
+
         def rows = db().rows("""
 SELECT * FROM et_scene_rule WHERE app_id = $appId AND scene_code = $sceneCode 
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -76,7 +81,9 @@ ORDER BY priority
     }
 
     List<SceneActionDO> getActionsByCodes(List<String> codes) {
+        codes = codes?.findAll{ it != null & !it.isAllWhitespace()}
         if (!codes) return []
+
         def rows = db().rows("""
 SELECT * FROM et_scene_action WHERE action_code IN (${codes.collect{'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -84,8 +91,20 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         toBeans(rows, SceneActionDO)
     }
 
+    List<SceneActionDO> getActionsByScene(String sceneCodes) {
+        if (sceneCodes == null || sceneCodes.isAllWhitespace()) return []
+
+        def rows = db().rows("""
+SELECT * FROM et_scene_action WHERE scene_code = $sceneCodes
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+""")
+        toBeans(rows, SceneActionDO)
+    }
+
     List<SceneRuleExprDO> getRuleExprsByIds(List<Long> ids) {
+        ids = ids?.findAll{ it}
         if (!ids) return []
+
         def rows = db().rows("""
 SELECT * FROM et_scene_rule_expr WHERE id IN (${ids.collect {'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -94,7 +113,9 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
     }
 
     List<SceneVarDO> getRuleVarsByIds(List<Long> ids) {
+        ids = ids?.findAll{ it}
         if (!ids) return []
+
         def rows = db().rows("""
 SELECT * FROM et_scene_var WHERE id IN (${ids.collect{'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -103,7 +124,9 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
     }
 
     List<SceneVarDO> getRuleVarsByAppCode(String appId, String sceneCode) {
-        if (!appId || !sceneCode) return []
+        if (appId == null || appId.isAllWhitespace()
+                || sceneCode == null || sceneCode.isAllWhitespace()) return []
+
         def rows = db().rows("""
 SELECT * FROM et_scene_var WHERE app_id = $appId AND scene_code = $sceneCode
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -111,7 +134,50 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         toBeans(rows, SceneVarDO)
     }
 
-    boolean insertScene(SceneDO scene) {
+    int insertRule(SceneRuleDO rule) {
+        if (rule == null
+                || rule.appId == null || rule.appId.isAllWhitespace()
+                || rule.sceneId == null || rule.sceneCode == null || rule.sceneCode.isAllWhitespace()
+                || rule.rule == null
+                || rule.ruleType == null
+                || rule.ruleName == null || rule.ruleName.isAllWhitespace()
+                || rule.ruleDesc == null || rule.ruleDesc.isAllWhitespace()
+                || rule.priority == null || rule.actionsCode == null) return -1
+
+        def db = db()
+        db.executeInsert("""
+INSERT INTO et_scene_rule 
+(app_id, scene_id, scene_code, rule, rule_type, rule_code, rule_name, rule_desc, priority, actions_code) VALUES (
+?.appId, ?.sceneId, ?.sceneCode, ?.rule, ?.ruleType, ?.ruleCode, ?.ruleName, ?.ruleDesc, ?.priority, ?.actionsCode
+)
+""", rule)
+        db.updateCount
+    }
+
+    int updateRule(SceneRuleDO rule) {
+        if (rule == null
+                || rule.rule == null
+                || rule.ruleType == null
+                || rule.ruleName == null || rule.ruleName.isAllWhitespace()
+                || rule.ruleDesc == null || rule.ruleDesc.isAllWhitespace()
+                || rule.priority == null || rule.actionsCode == null) return -1
+
+        def db = db()
+        db.execute("""
+update et_scene_rule 
+set rule = ${rule.rule},
+rule_type = ${rule.ruleType},
+rule_name = ${rule.ruleName},
+rule_desc = ${rule.ruleDesc},
+priority = ${rule.priority},
+actions_code = ${rule.actionsCode} 
+where id = ${rule.id}
+LIMIT 1
+""")
+        db.updateCount
+    }
+
+    int insertScene(SceneDO scene) {
         if (scene == null
                 || scene.appId == null
                 || scene.appId.isAllWhitespace()
@@ -121,33 +187,41 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
                 || scene.sceneCode.isAllWhitespace()
                 || scene.sceneDesc == null
                 || scene.sceneDesc.isAllWhitespace()
-                || scene.sceneType == null) return false
-        db().execute("""
+                || scene.sceneType == null) return -1
+
+        def db = db()
+        db.execute("""
 INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VALUES ( 
   ?.appId, ?.sceneName, ?.sceneCode, ?.sceneDesc, ?.sceneType 
 )
 """, scene)
+        db.updateCount
     }
 
-    boolean updateSceneStatus(String sceneCode, Byte status) {
-        if (sceneCode == null || sceneCode.isAllWhitespace() || status == null) return false
-        db().execute("""
+    int updateSceneStatus(String sceneCode, Byte status) {
+        if (sceneCode == null || sceneCode.isAllWhitespace() || status == null)
+            return -1
+
+        def db = db()
+        db.execute("""
 update et_scene set  
 scene_status = $status
 where scene_code = $sceneCode
 limit 1
 """)
+        db.updateCount
     }
 
     // 只能更新 name/desc/type 必须同时更新
-    boolean updateScene(SceneDO scene) {
+    int updateScene(SceneDO scene) {
         if (!scene || !scene.id
                 || scene.sceneName == null || scene.sceneName.isAllWhitespace()
                 || scene.sceneDesc == null || scene.sceneDesc.isAllWhitespace()
                 || scene.sceneType == null
-        ) return false
+        ) return -1
 
-        db().execute("""
+        def db = db()
+        db.execute("""
 update et_scene set  
 scene_name = ${scene.sceneName},
 scene_desc = ${scene.sceneDesc},
@@ -155,17 +229,18 @@ scene_type = ${scene.sceneType}
 where id = ${scene.id}
 limit 1
 """)
+        db.updateCount
     }
 
-    boolean deleteVar(Long id) {
+    int deleteVar(Long id) {
         // TODO disabled
     }
 
-    boolean deleteScene(Long id) {
+    int deleteScene(Long id) {
         // TODO disabled
     }
 
-    boolean insertVar(SceneVarDO var) {
+    int insertVar(SceneVarDO var) {
         // TODO 检查 sceneId 与 sceneCode 是否存在 !!!
         if (var == null
                 || var.appId == null
@@ -179,30 +254,46 @@ limit 1
                 || var.varType.isAllWhitespace()
                 || var.varDesc == null
                 || var.varDesc.isAllWhitespace()
-        ) return false
-        db().execute("""
+        ) return -1
+
+        def db = db()
+        db.execute("""
 INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_type, var_desc) VALUES (
   ?.appId, ?.sceneId, ?.sceneCode, ?.varName, ?.varType, ?.varDesc
 )
 """, var)
+        db.updateCount
     }
 
     // 只能更新 name/desc 必须同时更新
-    boolean updateVar(SceneVarDO var) {
+    int updateVar(SceneVarDO var) {
         if (!var || !var.id || var.varName == null
                 || var.varName.isAllWhitespace()
                 || var.varType == null
                 || var.varType.isAllWhitespace()
                 || var.varDesc == null
-                || var.varDesc.isAllWhitespace()) return false
+                || var.varDesc.isAllWhitespace()) return -1
 
-        db().execute("""
+        def db = db()
+        db.execute("""
 update et_scene_var set 
 var_name = ${var.varName},
 var_type = ${var.varType}, 
 var_desc = ${var.varDesc} 
 where id = ${var.id};
 """)
+        db.updateCount
+    }
+
+    static List<String> parserActionCodes (String codes) {
+        if (codes == null || codes.isAllWhitespace()) return []
+        if (codes.indexOf(',') == -1) {
+            [codes] as List<String>
+        } else {
+            codes.tokenize(',')
+                    .findAll { it != null && !it.isAllWhitespace() }
+                    .collect { it.trim() }  as List<String>
+        }
     }
 
     static List<String> getActionsCodesByRule (SceneRuleDO rule) {

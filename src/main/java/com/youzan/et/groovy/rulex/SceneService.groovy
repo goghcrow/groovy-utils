@@ -51,6 +51,15 @@ class SceneService {
         getExpressions(sceneDS.getRulesBySceneCode(appName, sceneCode))
     }
 
+    List<SceneActionDO> getActionsByScene(String sceneCode) {
+        sceneDS.getActionsByScene(sceneCode)
+    }
+
+    List<SceneActionDO> getActionsByCodes(String codes) {
+        def codeList = sceneDS.parserActionCodes(codes)
+        sceneDS.getActionsByCodes(codeList)
+    }
+
     List<SceneActionDO> getActionsByRule(SceneRuleDO rule) {
         sceneDS.getActionsByCodes(sceneDS.getActionsCodesByRule(rule))
     }
@@ -72,20 +81,26 @@ class SceneService {
         rules
     }
 
-    boolean upsertScene(SceneDO scene) {
-        if (scene?.id) {
+    int upsertRule(SceneRuleDO ruleDO) {
+        if (ruleDO?.id)
+            sceneDS.updateRule(ruleDO)
+        else
+            sceneDS.insertRule(ruleDO)
+    }
+
+    int upsertScene(SceneDO scene) {
+        if (scene?.id)
             sceneDS.updateScene(scene)
-        } else {
+        else
             sceneDS.insertScene(scene)
-        }
     }
 
     // 已经被关联的不能随便编辑
-    boolean upsertVar(SceneVarDO var) {
-        if (var?.id) {
+    int upsertVar(SceneVarDO var) {
+        if (var?.id)
             sceneDS.updateVar(var)
-        } else {
+        else
             sceneDS.insertVar(var)
-        }
+
     }
 }

@@ -7,6 +7,9 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class SceneActionDO extends AbstractDO {
     Long id
+    String appId
+    Long sceneId
+    String sceneCode
     String actionCode
     String actionDesc
     String action
