@@ -3,9 +3,11 @@ package com.youzan.et.groovy.rulex
 import com.youzan.et.groovy.rulex.datasrc.*
 import groovy.sql.GroovyRowResult
 import groovy.sql.Sql
+import groovy.transform.CompileStatic
 
 import javax.sql.DataSource
 
+@CompileStatic
 class SceneDS {
 
     private DataSource ds
@@ -18,7 +20,8 @@ class SceneDS {
         db().rows('''
 SELECT DISTINCT app_id FROM et_scene
 WHERE deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
-''').collect { it.app_id }
+''').collect { it.app_id as String }
+
     }
 
     List<SceneDO> getScenesByApp(String appId) {
@@ -80,22 +83,25 @@ ORDER BY priority
         toBeans(rows, SceneRuleDO)
     }
 
-    List<SceneActionDO> getActionsByCodes(List<String> codes) {
+    List<SceneActionDO> getActionsByCodes(String appId, List<String> codes) {
+        if (appId == null || appId.isAllWhitespace()) return []
         codes = codes?.findAll{ it != null & !it.isAllWhitespace()}
         if (!codes) return []
 
         def rows = db().rows("""
 SELECT * FROM et_scene_action WHERE action_code IN (${codes.collect{'?'}.join(',')})
+AND app_id = ?
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
-""", codes)
+""", (codes + [appId]) as List<Object>)
         toBeans(rows, SceneActionDO)
     }
 
-    List<SceneActionDO> getActionsByScene(String sceneCodes) {
-        if (sceneCodes == null || sceneCodes.isAllWhitespace()) return []
+    List<SceneActionDO> getActionsByScene(String appId, String sceneCodes) {
+        if (appId == null || appId.isAllWhitespace()
+                || sceneCodes == null || sceneCodes.isAllWhitespace()) return []
 
         def rows = db().rows("""
-SELECT * FROM et_scene_action WHERE scene_code = $sceneCodes
+SELECT * FROM et_scene_action WHERE scene_code = $sceneCodes AND app_id = $appId
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """)
         toBeans(rows, SceneActionDO)
@@ -108,7 +114,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         def rows = db().rows("""
 SELECT * FROM et_scene_rule_expr WHERE id IN (${ids.collect {'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
-""", ids)
+""", ids as List<Object>)
         toBeans(rows, SceneRuleExprDO)
     }
 
@@ -119,7 +125,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         def rows = db().rows("""
 SELECT * FROM et_scene_var WHERE id IN (${ids.collect{'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
-""", ids)
+""", ids as List<Object>)
         toBeans(rows, SceneVarDO)
     }
 
@@ -198,15 +204,16 @@ INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VA
         db.updateCount
     }
 
-    int updateSceneStatus(String sceneCode, Byte status) {
-        if (sceneCode == null || sceneCode.isAllWhitespace() || status == null)
+    int updateSceneStatus(String appName, String sceneCode, Byte status) {
+        if (appName == null || appName.isAllWhitespace()
+                || sceneCode == null || sceneCode.isAllWhitespace() || status == null)
             return -1
 
         def db = db()
         db.execute("""
 update et_scene set  
 scene_status = $status
-where scene_code = $sceneCode
+where scene_code = $sceneCode and app_id = $appName
 limit 1
 """)
         db.updateCount
@@ -243,17 +250,12 @@ limit 1
     int insertVar(SceneVarDO var) {
         // TODO 检查 sceneId 与 sceneCode 是否存在 !!!
         if (var == null
-                || var.appId == null
-                || var.appId.isAllWhitespace()
+                || var.appId == null || var.appId.isAllWhitespace()
                 || var.sceneId == null
-                || var.sceneCode == null
-                || var.sceneCode.isAllWhitespace()
-                || var.varName == null
-                || var.varName.isAllWhitespace()
-                || var.varType == null
-                || var.varType.isAllWhitespace()
-                || var.varDesc == null
-                || var.varDesc.isAllWhitespace()
+                || var.sceneCode == null || var.sceneCode.isAllWhitespace()
+                || var.varName == null || var.varName.isAllWhitespace()
+                || var.varType == null || var.varType.isAllWhitespace()
+                || var.varDesc == null || var.varDesc.isAllWhitespace()
         ) return -1
 
         def db = db()
@@ -267,12 +269,10 @@ INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_type, var_
 
     // 只能更新 name/desc 必须同时更新
     int updateVar(SceneVarDO var) {
-        if (!var || !var.id || var.varName == null
-                || var.varName.isAllWhitespace()
-                || var.varType == null
-                || var.varType.isAllWhitespace()
-                || var.varDesc == null
-                || var.varDesc.isAllWhitespace()) return -1
+        if (!var || !var.id
+                || var.varName == null || var.varName.isAllWhitespace()
+                || var.varType == null || var.varType.isAllWhitespace()
+                || var.varDesc == null || var.varDesc.isAllWhitespace()) return -1
 
         def db = db()
         db.execute("""
@@ -280,7 +280,52 @@ update et_scene_var set
 var_name = ${var.varName},
 var_type = ${var.varType}, 
 var_desc = ${var.varDesc} 
-where id = ${var.id};
+where id = ${var.id}
+limit 1
+""")
+        db.updateCount
+    }
+
+    int insertAction(SceneActionDO action) {
+        // TODO 检查 sceneId 与 sceneCode 是否存在 !!!
+        if (action == null
+                || action.appId == null
+                || action.appId.isAllWhitespace()
+                || action.sceneId == null
+                || action.sceneCode == null
+                || action.sceneCode.isAllWhitespace()
+                || action.actionCode == null
+                || action.actionCode.isAllWhitespace()
+                || action.actionDesc == null
+                || action.actionDesc.isAllWhitespace()
+                || action.action == null
+                || action.action.isAllWhitespace()
+        ) return -1
+
+        def db = db()
+        db.execute("""
+INSERT INTO et_scene_action (
+app_id, scene_id, scene_code, action_code, action_desc, action) VALUES (
+?.appId, ?.sceneId, ?.sceneCode, ?.actionCode, ?.actionDesc, ?.action
+)
+""", action)
+        db.updateCount
+    }
+
+    // 只能更新 desc 和 内容, 不能更新编号
+    int updateAction(SceneActionDO action) {
+        if (!action || !action.id
+                || action.actionCode == null || action.actionCode.isAllWhitespace()
+                || action.actionDesc == null || action.actionDesc.isAllWhitespace()
+                || action.action == null || action.action.isAllWhitespace()) return -1
+
+        def db = db()
+        db.execute("""
+update et_scene_action 
+set action_desc = ${action.actionDesc},
+action = ${action.action}
+where id = ${action.id}
+limit 1
 """)
         db.updateCount
     }
@@ -331,7 +376,7 @@ where id = ${var.id};
         if (row == null) return null
         def bean = kind.newInstance()
         row.each {
-            def k = (it.key as String).replaceAll(/_\w/){ strs ->
+            def k = (it.key as String).replaceAll(/_\w/){ String strs ->
                 (strs[1] as String).toUpperCase()
             }
             bean[k] = it.value

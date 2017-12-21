@@ -62,7 +62,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
             throw new RuntimeException('请为 RuleEngineX Bean 配置 dataSource 属性')
         }
         if (!sceneService) {
-            sceneService = new SceneService(sceneDS: new SceneDS(ds: dataSource), appName: appName)
+            sceneService = new SceneService(sceneDS: new SceneDS(ds: dataSource))
         }
     }
 
@@ -79,7 +79,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         }
 
         def rules = sceneService.getRulesByApp(appName)
-        def actions = sceneService.getActionsByRules(rules)
+        def actions = sceneService.getActionsByRules(appName, rules)
 
         scenes.each { scene ->
             String dsl = SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
@@ -99,11 +99,11 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * 开启\关闭\刷新场景规则
      * @param sceneCode
      */
-    void refresh(String sceneCode, boolean enabled) {
+    void refresh(String appName, String sceneCode, boolean enabled) {
         envCheck()
 
         if (enabled) {
-            def dsl = render(sceneCode)
+            def dsl = render(appName, sceneCode)
             def scene = compile(dsl)
             if (scene == null) {
                 throw new RuntimeException("错误的规则定义:\n$dsl")
@@ -142,16 +142,17 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * @param sceneCode
      * @return
      */
-    String render(String sceneCode) {
+    String render(String appName, String sceneCode) {
         envCheck()
 
-        if (sceneCode == null) return null
+        if (appName == null || appName.isAllWhitespace()
+            || sceneCode == null || sceneCode.isAllWhitespace()) return null
 
         def scene = sceneService.getSceneByAppCode(appName, sceneCode)
         if (scene == null) return null
 
         def rules = sceneService.getRulesByAppCode(appName, sceneCode)
-        def actions = sceneService.getActionsByRules(rules)
+        def actions = sceneService.getActionsByRules(appName, rules)
 
         SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
     }
@@ -208,14 +209,15 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
     /**
      * 测试 场景执行
+     * @param appName
      * @param sceneCode
      * @param facts
      * @param doAction 是否执行 action
      */
-    Map<Rule, Boolean> test(String sceneCode, Map<String, Object> facts, boolean doAction = false) {
+    Map<Rule, Boolean> test(String appName, String sceneCode, Map<String, Object> facts, boolean doAction = false) {
         envCheck()
 
-        def dsl = render(sceneCode)
+        def dsl = render(appName, sceneCode)
         if (dsl == null) {
             throw new RuntimeException("场景未定义(code=$sceneCode)")
         }

@@ -94,7 +94,7 @@ println ''
 
 //x.refresh('scene_test')
 
-println x.test('scene_test', [id: 42], false)
+println x.test('et_xiaolv', 'scene_test', [id: 42], false)
 
 exit(1)
 
