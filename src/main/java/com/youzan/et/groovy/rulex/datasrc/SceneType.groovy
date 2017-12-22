@@ -2,15 +2,15 @@ package com.youzan.et.groovy.rulex.datasrc
 
 import groovy.transform.CompileStatic
 
-import static com.youzan.et.groovy.rule.RuleEngine.*
+import com.youzan.et.groovy.rule.RuleEngine
 
 @CompileStatic
 enum SceneType {
-    skipOnApplied(val: (byte)1, opts: skipOnApplied, desc: '匹配成功忽略后续'),
-    skipOnIgnored(val: (byte)2, opts: skipOnIgnored, desc: '匹配失败忽略后续'),
-    skipOnFailed(val: (byte)3, opts: skipOnFailed, desc: '执行失败忽略后续')
+    skipOnApplied(val: (byte)1, opts: RuleEngine.skipOnApplied, desc: '匹配成功忽略后续'),
+    skipOnIgnored(val: (byte)2, opts: RuleEngine.skipOnIgnored, desc: '匹配失败忽略后续'),
+    skipOnFailed(val: (byte)3, opts: RuleEngine.skipOnFailed, desc: '执行失败忽略后续')
     Byte val
-    Options opts
+    RuleEngine.Options opts
     String desc
 
     final static Map<Byte, SceneType> tlb
@@ -18,8 +18,8 @@ enum SceneType {
         tlb = values().collectEntries{ [(it.val): it] }
     }
 
-    static Options toRuleEngineOpts(Byte val) {
-        tlb[(val)] ? tlb[(val)].opts :  none
+    static RuleEngine.Options toRuleEngineOpts(Byte val) {
+        tlb[(val)] ? tlb[(val)].opts :  RuleEngine.none
     }
 
     static String toDesc(Byte val) {
