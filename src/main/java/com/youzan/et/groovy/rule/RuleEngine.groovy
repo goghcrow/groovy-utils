@@ -26,9 +26,11 @@ class RuleEngine {
      * 触发规则
      * @param rules
      * @param facts
+     * @param opts
      */
-    void fire(Rules rules, Map<String, Object> facts, Options opts = null) {
+    Map<Rule, Object> fire(Rules rules, Map<String, Object> facts, Options opts = null) {
         def delegate = makeDelegate(facts)
+        def ret = [:]
 
         rules?.any { rule ->
             if (beforeEval.any { it.delegate = delegate; !it(rule, facts) }) return true
@@ -40,10 +42,11 @@ class RuleEngine {
             if (trigger) {
                 try {
                     rule._exec.delegate = delegate
-                    rule._exec.call facts // call 同上
+                    ret[rule] = rule._exec.call facts // call 同上
                     afterExec.each { it.delegate = delegate; it(rule, facts, null) }
                     if (opts?.skipOnApplied) return true
                 } catch (Exception e) {
+                    ret[rule] = e
                     afterExec.each { it.delegate = delegate; it(rule, facts, e) }
                     if (opts?.skipOnFailed) return true
                 }
@@ -53,18 +56,21 @@ class RuleEngine {
 
             false
         }
+
+        ret
     }
 
     /**
      * 检测规则
      * @param rules
      * @param facts
+     * @param opts
      * @return
      */
     Map<Rule, Boolean> check(Rules rules, Map<String, Object> facts) {
         def delegate = makeDelegate(facts)
 
-        rules?.collectEntries() { rule ->
+        rules?.collectEntries { rule ->
             if (beforeEval.any { it.delegate = delegate; !it(rule, facts) }) return true
 
             rule._eval.delegate = delegate

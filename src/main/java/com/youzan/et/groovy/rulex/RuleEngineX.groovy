@@ -175,13 +175,13 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      * @param sceneCode
      * @param facts
      */
-    void fire(String sceneCode, Map<String, Object> facts) {
+    Map<Rule, Object> fire(String sceneCode, Map<String, Object> facts) {
         envCheck()
 
-        if (sceneCode == null) return
+        if (sceneCode == null) return null
         if (!scenesTbl.containsKey(sceneCode)) {
             log.warn("场景 $sceneCode 未定义或未开启")
-            return
+            return null
         }
 
         def scene = scenesTbl.get(sceneCode) as Scene
