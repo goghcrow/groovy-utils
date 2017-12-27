@@ -75,6 +75,24 @@ enum OperatorType {
             }
             "!${right}.contains($left)"
         }
+    },
+    MOD(operator: '%') {
+        String compile(String left, String rightType, String rightVal) {
+            def right = VarType.typeOf(rightType)?.sanitize(rightVal)
+            if (right == null || !VarType.typeOf(rightType)?.scalar || !right.toString().isNumber()) {
+                throw new RuntimeException("非法表达式 leftName=$left, rightType=$rightType, rightVal=$rightVal")
+            }
+            "($left % $right) == 0"
+        }
+    },
+    NMOD(operator: '!%') {
+        String compile(String left, String rightType, String rightVal) {
+            def right = VarType.typeOf(rightType)?.sanitize(rightVal)
+            if (right == null || !VarType.typeOf(rightType)?.scalar || !right.toString().isNumber()) {
+                throw new RuntimeException("非法表达式 leftName=$left, rightType=$rightType, rightVal=$rightVal")
+            }
+            "($left % $right) != 0"
+        }
     }
 
 // TODO 后续支持
