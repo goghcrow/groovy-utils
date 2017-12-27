@@ -5,6 +5,7 @@ import com.youzan.et.groovy.rule.RuleEngine
 import com.youzan.et.groovy.rule.Rules
 import com.youzan.et.groovy.rulex.datasrc.SceneRuleDO
 import com.youzan.et.groovy.rulex.datasrc.SceneType
+import com.youzan.et.groovy.rulex.datasrc.VarType
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.springframework.beans.BeansException
@@ -79,6 +80,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         }
 
         def rules = sceneService.getRulesByApp(appName)
+        rules = sceneService.replaceRulesExpression(rules)
         def actions = sceneService.getActionsByRules(appName, rules)
 
         scenes.each { scene ->
@@ -132,6 +134,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
 
         if (ruleId == null) return null
         SceneRuleDO rule = sceneService.getRuleById(ruleId)
+        rule = sceneService.replaceRulesExpression([rule]).first()
         def actions = sceneService.getActionsByRule(rule)
 
         SceneBuilder.render(rule, actions)
@@ -152,6 +155,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         if (scene == null) return null
 
         def rules = sceneService.getRulesByAppCode(appName, sceneCode)
+        rules = sceneService.replaceRulesExpression(rules)
         def actions = sceneService.getActionsByRules(appName, rules)
 
         SceneBuilder.render(scene, rules.findAll { it.sceneId == scene.id }, actions)
@@ -177,6 +181,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      */
     Map<Rule, Object> fire(String sceneCode, Map<String, Object> facts) {
         envCheck()
+        sanitizeFacts(appName, sceneCode, facts)
 
         if (sceneCode == null) return null
         if (!scenesTbl.containsKey(sceneCode)) {
@@ -197,6 +202,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      */
     Map<Rule, Boolean> check(String sceneCode, Map<String, Object> facts) {
         envCheck()
+        sanitizeFacts(appName, sceneCode, facts)
 
         if (sceneCode == null) return null
         if (!scenesTbl.containsKey(sceneCode)) {
@@ -216,6 +222,7 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
      */
     Map<Rule, Boolean> test(String appName, String sceneCode, Map<String, Object> facts, boolean doAction = false) {
         envCheck()
+        sanitizeFacts(appName, sceneCode, facts)
 
         def dsl = render(appName, sceneCode)
         if (dsl == null) {
@@ -236,5 +243,24 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
         facts.putIfAbsent('log', log)
         facts.putIfAbsent('facts', facts)
         new Facts(ctx: ctx, facts: facts)
+    }
+
+    // 检查 facts 是否缺失, 类型转换
+    private void sanitizeFacts(String appName, String sceneCode, Map<String, Object> facts) {
+        Objects.requireNonNull(facts)
+
+        sceneService.getVarsByAppCode(appName, sceneCode).each {
+            if (!facts.containsKey(it.varName)) {
+                throw new RuntimeException("Fact 缺失: $it.varName: $it.varDesc")
+            }
+
+            def fact = facts[(it.varName)]
+            try {
+                facts[(it.varName)] = VarType.typeOf(it.varType).sanitize(fact)
+            } catch (Exception e) {
+                log.error('fact cast exception: ' + e.getMessage(), e)
+                throw new RuntimeException("Fact 转换错误, 期望: $it.varType, 实际值: $fact")
+            }
+        }
     }
 }

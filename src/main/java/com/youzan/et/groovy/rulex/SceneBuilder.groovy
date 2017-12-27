@@ -24,27 +24,11 @@ class SceneBuilder {
             rule
         }
 
-        @SuppressWarnings("GrMethodMayBeStatic")
+        @SuppressWarnings(["GrMethodMayBeStatic", "GroovyUnusedDeclaration"])
         Scene scene(@DelegatesTo(Rules) Closure c) {
             def scene = new Scene()
             scene.with c
             scene
-        }
-    }
-
-    static void compileExprs(List<SceneRuleDO> rules, Map<Long, String> exprTable) {
-        rules.each { SceneRuleDO rule ->
-            if (rule.ruleType == SceneRuleDO.expr) {
-                /*
-                IDE 类型推导有问题, 忽略报错 !!!
-                "{0} && {1}".aceAll(/\{\d+\}/) { String it -> println it} // {0} {1}
-                "{0} && {1}".replaceAll(/\{\d+\}/) { String[] it -> println it} // [{0}] [{1}]
-                */
-                rule.rule = rule.rule.replaceAll(/\{\d+\}/) { String it->
-                    assert exprTable[it[1..-2] as Long]
-                    exprTable[it[1..-2] as Long]
-                }
-            }
         }
     }
 

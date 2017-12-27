@@ -16,6 +16,7 @@
 
     <properties>
         <groovy.version>2.4.7</groovy.version>
+        <gpars.version>1.2.1</gpars.version>
         <gmaven.version>1.5</gmaven.version>
         <gmaven.ProviderSelection>2.0</gmaven.ProviderSelection>
 
@@ -71,10 +72,15 @@
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
         </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.codehaus.gmavenplus</groupId>-->
+            <!--<artifactId>gmavenplus-plugin</artifactId>-->
+            <!--<version>${gmavenplus.version}</version>-->
+        <!--</dependency>-->
         <dependency>
-            <groupId>org.codehaus.gmavenplus</groupId>
-            <artifactId>gmavenplus-plugin</artifactId>
-            <version>${gmavenplus.version}</version>
+            <groupId>org.codehaus.gpars</groupId>
+            <artifactId>gpars</artifactId>
+            <version>${gpars.version}</version>
         </dependency>
 
 

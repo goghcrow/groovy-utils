@@ -36,7 +36,7 @@ ORDER BY id
         toBeans(rows, SceneDO)
     }
 
-    SceneDO getSceneByCode(String appId, String sceneCode) {
+    SceneDO getSceneByAppCode(String appId, String sceneCode) {
         if (appId == null || appId.isAllWhitespace()
         || sceneCode == null || sceneCode.isAllWhitespace()) return null
 
@@ -71,7 +71,7 @@ ORDER BY priority
         toBeans(rows, SceneRuleDO)
     }
 
-    List<SceneRuleDO> getRulesBySceneCode(String appId, String sceneCode) {
+    List<SceneRuleDO> getRulesByAppCode(String appId, String sceneCode) {
         if (appId == null || appId.isAllWhitespace()
                 || sceneCode == null || sceneCode.isAllWhitespace()) return []
 
@@ -107,7 +107,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         toBeans(rows, SceneActionDO)
     }
 
-    List<SceneRuleExprDO> getRuleExprsByIds(List<Long> ids) {
+    List<SceneRuleExprDO> getExprsByIds(List<Long> ids) {
         ids = ids?.findAll{ it}
         if (!ids) return []
 
@@ -115,6 +115,17 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 SELECT * FROM et_scene_rule_expr WHERE id IN (${ids.collect {'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """, ids as List<Object>)
+        toBeans(rows, SceneRuleExprDO)
+    }
+
+    List<SceneRuleExprDO> getExprsByAppCode(String appId, String sceneCode) {
+        if (appId == null || appId.isAllWhitespace()
+                || sceneCode == null || sceneCode.isAllWhitespace()) return []
+
+        def rows = db().rows("""
+SELECT * FROM et_scene_rule_expr WHERE app_id = $appId AND scene_code = $sceneCode
+AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
+""")
         toBeans(rows, SceneRuleExprDO)
     }
 
@@ -129,7 +140,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         toBeans(rows, SceneVarDO)
     }
 
-    List<SceneVarDO> getRuleVarsByAppCode(String appId, String sceneCode) {
+    List<SceneVarDO> getVarsByAppCode(String appId, String sceneCode) {
         if (appId == null || appId.isAllWhitespace()
                 || sceneCode == null || sceneCode.isAllWhitespace()) return []
 
@@ -204,7 +215,10 @@ INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VA
         db.updateCount
     }
 
-    int updateSceneStatus(String appName, String sceneCode, Byte status) {
+    boolean switchScene(String appName, String sceneCode, boolean flag) {
+        if (sceneCode == null || sceneCode.isAllWhitespace()) return false
+        Byte status = flag ? SceneDO.enabled : SceneDO.disabled
+
         if (appName == null || appName.isAllWhitespace()
                 || sceneCode == null || sceneCode.isAllWhitespace() || status == null)
             return -1
@@ -330,6 +344,44 @@ limit 1
         db.updateCount
     }
 
+    int insertExpr(SceneRuleExprDO expr) {
+        // TODO 检查 sceneId 与 sceneCode 是否存在 !!!
+        if (expr == null
+                || expr.appId == null || expr.appId.isAllWhitespace()
+                || expr.sceneId == null
+                || expr.sceneCode == null || expr.sceneCode.isAllWhitespace()
+                || expr.exprVar == null
+                || expr.exprOp == null || expr.exprOp.isAllWhitespace()
+                || expr.exprVal == null || expr.exprVal.isAllWhitespace()
+        ) return -1
+
+        def db = db()
+        db.execute("""
+INSERT INTO et_scene_rule_expr (app_id, scene_id, scene_code, expr_var, expr_op, expr_val) VALUES (
+  ?.appId, ?.sceneId, ?.sceneCode, ?.exprVar, ?.exprOp, ?.exprVal
+)
+""", expr)
+        db.updateCount
+    }
+
+    int updateExpr(SceneRuleExprDO expr) {
+        if (!expr || !expr.id
+                || expr.exprVar == null
+                || expr.exprOp == null || expr.exprOp.isAllWhitespace()
+                || expr.exprVal == null || expr.exprVal.isAllWhitespace()) return -1
+
+        def db = db()
+        db.execute("""
+update et_scene_rule_expr set 
+expr_var = ${expr.exprVar},
+expr_op = ${expr.exprOp}, 
+expr_val = ${expr.exprVal} 
+where id = ${expr.id}
+limit 1
+""")
+        db.updateCount
+    }
+
     static List<String> parserActionCodes (String codes) {
         if (codes == null || codes.isAllWhitespace()) return []
         if (codes.indexOf(',') == -1) {
@@ -360,23 +412,16 @@ limit 1
     static List<Long> getExprIdsByRules(List<SceneRuleDO> rules) {
         if (!rules) return []
         rules.findAll { it.ruleType == SceneRuleDO.expr }.collect {
+            // it.rule.findAll(/\{(\d+)\}/).collect { it[1] as Long }
             it.rule.findAll(/\{\d+\}/).collect { it[1..-2] as Long }
         }.flatten().unique() as List<Long>
-    }
-
-    static Map<Long, String> makeExprTable(List<SceneVarDO> vars, List<SceneRuleExprDO> exprs) {
-        Map<Long, SceneVarDO> varMap = vars.collectEntries { [(it.id): it] }
-        exprs.collectEntries {
-            assert varMap[it.exprVar] // TODO op: in?
-            [(it.id): "${varMap[it.exprVar]?.varName} ${it.exprOp} ${it.exprVal}"]
-        }
     }
 
     static <T> T toBean(GroovyRowResult row, Class<T> kind) {
         if (row == null) return null
         def bean = kind.newInstance()
         row.each {
-            def k = (it.key as String).replaceAll(/_\w/){ String strs ->
+            def k = (it.key as String).replaceAll(~/_(\w)/){ List<String> strs ->
                 (strs[1] as String).toUpperCase()
             }
             bean[k] = it.value

@@ -7,7 +7,9 @@ import groovy.transform.CompileStatic
 @CompileStatic
 class SceneRuleExprDO extends AbstractDO {
     Long id
-    Long sceneRuleId
+    String appId
+    Long sceneId
+    String sceneCode
     Long exprVar
     String exprOp
     String exprVal

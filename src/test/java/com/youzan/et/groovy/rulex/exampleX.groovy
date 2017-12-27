@@ -3,8 +3,6 @@ package com.youzan.et.groovy.rulex
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource
 import com.youzan.et.groovy.rule.Rule
 import com.youzan.et.groovy.rule.Rules
-import com.youzan.et.groovy.rulex.doc.Fact
-import com.youzan.et.groovy.rulex.doc.FactField
 import org.springframework.context.support.StaticApplicationContext
 
 import java.lang.annotation.Annotation
@@ -114,15 +112,15 @@ println ''
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
 
-@Fact(name ='业务对象')
-class Biz {
-
-    @FactField(name='姓名')
-    String name
-
-    Integer id
-}
-
+//@Fact(name ='业务对象')
+//class Biz {
+//
+//    @FactField(name='姓名')
+//    String name
+//
+//    Integer id
+//}
+//
 
 class Utils {
     static <A extends Annotation> A findAnnotation(final Class<A> targetAnnotation, final Class<?> annotatedType) {

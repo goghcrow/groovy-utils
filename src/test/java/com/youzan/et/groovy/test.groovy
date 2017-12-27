@@ -1,6 +1,108 @@
 package com.youzan.et.groovy
 
+@Grab(group='org.codehaus.gpars', module='gpars', version='1.2.1')
 import groovy.transform.CompileStatic
+import groovy.transform.TypeChecked
+import groovyx.gpars.dataflow.Dataflows
+
+import static groovyx.gpars.actor.Actors.*
+import static groovyx.gpars.GParsPool.withPool
+import static groovyx.gpars.dataflow.Dataflow.task
+
+
+def exit = System.&exit
+
+assert [1..3].flatten() == [1,2,3]
+
+assert [1..3].value == [[1,2,3]]
+assert [1..3]*.value == [[1,2,3]]
+assert [1..3].toList() == [1..3]
+
+
+withPool {
+    assert [1,4,9] == [1..3].flatten().makeConcurrent().collect { it * it }
+}
+
+withPool {
+    assert 55 == [0..4].flatten().parallel
+            .map { it + 1 }
+            .map { it ** 2 }
+            .reduce { a, b -> a + b }
+}
+
+
+withPool {
+    assert [1,4,9] == [1..6].flatten().parallel
+            .map { it * it }
+            .filter { it < 10 }
+            .collection
+}
+
+withPool {
+    assert [1,4,9] == [1..6].flatten().parallelStream()
+            .map { it * it }
+            .filter { it < 10 }
+            .collect()
+}
+
+withPool (3) {}
+
+
+def pid = { println Thread.currentThread().id }
+final flow = new Dataflows()
+task { pid(); flow.result = flow.x + flow.y }
+task { pid(); flow.x = 10 }
+task { pid(); flow.y = 5 }
+assert 15 == flow.result
+
+final flowDeadlock = new Dataflows()
+task { flowDeadlock.x = flowDeadlock.y; println "hello" }
+task { flowDeadlock.y = flowDeadlock.x; println "world" }
+
+
+
+messageHandler {
+
+}
+
+def decryptor = actor {
+    loop {
+        react {
+            if (it instanceof String) reply it.reverse()
+            else stop()
+        }
+    }
+}
+
+def console = actor {
+    decryptor << 'lellarap si yvoorG'
+    react {
+        println 'Decrypted message: ' + it
+        decryptor << false
+    }
+}
+[decryptor, console]*.join()
+
+
+
+
+//println worker.dump().replaceAll(' ', '\n')
+
+actor {
+    actor {
+        react {
+            reply it.reverse()
+        }
+    } << 'hello'
+    react {
+        println it
+    }
+}.join()
+
+
+
+
+
 
 //@CompileStatic
 //class MapX {
@@ -10,13 +112,15 @@ import groovy.transform.CompileStatic
 //def m = new MapX()
 //println m.hello
 //println m.size()
-//
-//Runtime.addShutdownHook {
-//    println 'hello'
-//}
 
-println Boolean[].name
-println forClassName('java.lang.Integer[]')
+
+
+
+
+//Runtime.addShutdownHook { println 'hello' }
+//
+//println Boolean[].name
+//println forClassName('java.lang.Integer[]')
 
 static Class<?> forClassName(String className) {
     def cls = [

@@ -108,7 +108,7 @@ class RBACService {
         def astTrans = new ASTTransformationCustomizer(new RBACDefinitionTransform())
         config.addCompilationCustomizers astTrans
 
-        def shell = new GroovyShell(RBAC.classLoader, binding, config)
+        def shell = new GroovyShell(new GroovyClassLoader(), binding, config)
         shell.evaluate(new URI(uri))
 
         rbac
