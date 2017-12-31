@@ -16,11 +16,13 @@ static Rule rule(@DelegatesTo(Rule) Closure c) {
     rule
 }
 
+/*
 static Rules rules(@DelegatesTo(Rules) Closure c) {
     def rules = new Rules()
     rules.with c
     rules
 }
+*/
 
 static Rules scene(@DelegatesTo(Rules) Closure c) {
     def scene = new Scene()
@@ -111,16 +113,6 @@ println ''
 
 
 /* -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- */
-
-//@Fact(name ='业务对象')
-//class Biz {
-//
-//    @FactField(name='姓名')
-//    String name
-//
-//    Integer id
-//}
-//
 
 class Utils {
     static <A extends Annotation> A findAnnotation(final Class<A> targetAnnotation, final Class<?> annotatedType) {

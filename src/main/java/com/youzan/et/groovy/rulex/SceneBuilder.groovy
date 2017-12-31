@@ -25,7 +25,7 @@ class SceneBuilder {
         }
 
         @SuppressWarnings(["GrMethodMayBeStatic", "GroovyUnusedDeclaration"])
-        Scene scene(@DelegatesTo(Rules) Closure c) {
+        Scene scene(@DelegatesTo(Scene) Closure c) {
             def scene = new Scene()
             scene.with c
             scene

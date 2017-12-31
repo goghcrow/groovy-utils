@@ -14,5 +14,5 @@ class Scene extends Rules {
     Scene name(String name) { _name = name; this }
     Scene code(String code) { _code = code; this }
     Scene desc(String desc) { _desc = desc; this }
-    Scene type(Integer type) { _type = type.byteValue(); this }
+    Scene type(int type) { _type = type.byteValue(); this }
 }

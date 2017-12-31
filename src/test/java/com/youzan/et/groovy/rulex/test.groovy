@@ -2,11 +2,6 @@ package com.youzan.et.groovy.rulex
 
 import com.youzan.et.groovy.rulex.datasrc.VarType
 
-
-
-
-System.exit(1)
-
 println VarType.typeList
 println VarType.typeMap
 
