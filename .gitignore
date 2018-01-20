@@ -115,3 +115,5 @@ buildNumber.properties
 !/.mvn/wrapper/maven-wrapper.jar
 log
 *.iml
+src/main/java/com/youzan/et/groovy/gql
+src/test/java/com/youzan/et/groovy/gqlg

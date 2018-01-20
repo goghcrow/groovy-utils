@@ -1,8 +1,5 @@
 package com.youzan.et.groovy.rule
 
-import com.youzan.et.groovy.rulex.RuleEngineX
-import com.youzan.et.groovy.rule.RuleEngine.Options
-
 static Rule rule(@DelegatesTo(Rule) Closure c) {
     def _rule = new Rule()
     _rule.with c

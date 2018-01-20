@@ -1,8 +1,5 @@
 package com.youzan.et.groovy
 
-@Grab(group='org.codehaus.gpars', module='gpars', version='1.2.1')
-import groovy.transform.CompileStatic
-import groovy.transform.TypeChecked
 import groovyx.gpars.dataflow.Dataflows
 
 import static groovyx.gpars.actor.Actors.*
@@ -11,6 +8,7 @@ import static groovyx.gpars.dataflow.Dataflow.task
 
 
 def exit = System.&exit
+
 
 assert [1..3].flatten() == [1,2,3]
 

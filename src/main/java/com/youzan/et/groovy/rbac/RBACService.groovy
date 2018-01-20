@@ -108,7 +108,8 @@ class RBACService {
         def astTrans = new ASTTransformationCustomizer(new RBACDefinitionTransform())
         config.addCompilationCustomizers astTrans
 
-        def shell = new GroovyShell(new GroovyClassLoader(), binding, config)
+        // FIXME 每次执行产生的新 Class 对象会产生内存泄漏
+        def shell = new GroovyShell(binding, config)
         shell.evaluate(new URI(uri))
 
         rbac

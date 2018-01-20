@@ -9,6 +9,7 @@ import org.codehaus.groovy.control.customizers.ImportCustomizer
 import org.codehaus.groovy.control.customizers.SecureASTCustomizer
 import org.codehaus.groovy.control.customizers.SourceAwareCustomizer
 import org.codehaus.groovy.runtime.InvokerHelper
+import org.codehaus.groovy.runtime.memoize.LRUCache
 import org.springframework.beans.BeansException
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
@@ -18,7 +19,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @CompileStatic
 class GShell implements ApplicationContextAware {
-    final static Long TIMED_INTERRUPT = 2L
+    final static long TIMED_INTERRUPT = 2L
+    final static int MAX_CACHE_SZ = 500
 
     static ApplicationContext ctx
 
@@ -54,7 +56,19 @@ class GShell implements ApplicationContextAware {
         Union(URI uri) { this.uri = uri; this.str = null }
     }
 
-    private final Map<String, Class> classCache = new ConcurrentHashMap<>()
+    private static class LRUCache<K,V> extends LinkedHashMap<K,V> {
+        private int maxSize
+        LRUCache(int capacity) {
+            super(capacity, 0.75f, true)
+            maxSize = capacity
+        }
+        protected boolean removeEldestEntry(Map.Entry<K,V> eldest) {
+            return size() > maxSize
+        }
+    }
+
+    // private final Map<String, Class> classCache = new ConcurrentHashMap<>()
+    private final Map<String, Class> classCache = Collections.synchronizedMap(new LRUCache<String, Class>(MAX_CACHE_SZ))
 
     // 查看源码, 这里绑定 out 可以绕过 System.out, 直接作用与 Groovy Script 对象 print 系列方法
     // Binding 非线程安全, 不要往 Shell 实例设置 Binding, 而要绑定到 Script
@@ -77,7 +91,7 @@ class GShell implements ApplicationContextAware {
         }
         def binding = new Binding(bindings)
 
-        def shell = new GroovyShell(this.class.classLoader, conf)
+        def shell = new GroovyShell(conf)
 
         def clazz = classCache.get(ck)
         if (clazz) {

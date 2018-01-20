@@ -424,7 +424,9 @@ limit 1
             def k = (it.key as String).replaceAll(~/_(\w)/){ List<String> strs ->
                 (strs[1] as String).toUpperCase()
             }
-            bean[k] = it.value
+            if (bean.hasProperty(k)) {
+                bean[k] = it.value
+            }
         }
         bean
     }

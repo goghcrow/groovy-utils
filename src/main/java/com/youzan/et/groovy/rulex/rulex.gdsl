@@ -1,0 +1,44 @@
+package com.youzan.et.groovy.rulex
+
+// DSL 智能提示 IDE awareness
+// https://confluence.jetbrains.com/display/GRVY/Scripting+IDE+for+DSL+awareness
+
+final String RULE_NAME = 'com.youzan.et.groovy.rule.Rule'
+final String SCENE_NAME = 'com.youzan.et.groovy.rulex.Scene'
+final String FACTS_NAME = 'com.youzan.et.groovy.rulex.Facts'
+
+// TODO fix 匹配路径
+def ctx = context(scope: scriptScope(), filetypes: ['groovy'])
+contributor(ctx) {
+    method name: 'rule', params: [rule: Closure.name], type: RULE_NAME, doc: '定义单条规则'
+    method name: 'scene', params: [rules: Closure.name], type: SCENE_NAME, doc: '定义场景(规则集合)'
+}
+
+def sceneCtx = context(scope: closureScope(isArg: true), filetypes: ['groovy'])
+contributor(sceneCtx) {
+    if (enclosingCall("scene")) {
+        delegatesTo findClass(SCENE_NAME)
+    }
+}
+
+def ruleCtx = context(scope: closureScope(isArg: true), filetypes: ['groovy'])
+contributor(ruleCtx) {
+    if (enclosingCall("rule")) {
+        /*
+        method name: 'name', params: [name: String.name], type: RULE_NAME, doc: ''
+        method name: 'code', params: [code: String.name], type: RULE_NAME, doc: ''
+        method name: 'desc', params: [desc: String.name], type: RULE_NAME, doc: ''
+        method name: 'order', params: [priority: Integer.name], type: RULE_NAME, doc: ''
+        method name: 'when', params: [desc: "${Closure.name}<Boolean>"], type: RULE_NAME, doc: ''
+        method name: 'then', params: [desc: Closure.name], type: RULE_NAME, doc: ''
+        */
+        delegatesTo findClass(RULE_NAME)
+        if (enclosingCall('when') || enclosingCall('then')) {
+            /* GShell/RuleEngineX::makeDelegate */
+            property name: 'facts', type: 'java.util.Map<String, Object>', doc: 'Facts'
+            property name: 'ctx', type: 'org.springframework.context.ApplicationContext', doc: 'Spring App Context'
+            property name: 'log', type: 'org.slf4j.Logger', doc: '@SLF4J'
+            delegatesTo findClass(FACTS_NAME)
+        }
+    }
+}
