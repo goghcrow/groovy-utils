@@ -9,15 +9,18 @@ import javax.sql.DataSource
 
 @CompileStatic
 class SceneDS {
+    private Sql db
 
-    private DataSource ds
+    SceneDS(DataSource ds) {
+        db = new Sql(ds)
+    }
 
-    private Sql db() {
-        new Sql(ds)
+    void init() {
+        db.execute(getClass().getResource('rulex/init.sql').text)
     }
 
     List<String> getApps() {
-        db().rows('''
+        db.rows('''
 SELECT DISTINCT app_id FROM et_scene
 WHERE deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 ''').collect { it.app_id as String }
@@ -27,7 +30,7 @@ WHERE deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
     List<SceneDO> getScenesByApp(String appId) {
         if (appId == null || appId.isAllWhitespace()) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene WHERE app_id = $appId
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 ORDER BY id
@@ -40,7 +43,7 @@ ORDER BY id
         if (appId == null || appId.isAllWhitespace()
         || sceneCode == null || sceneCode.isAllWhitespace()) return null
 
-        def row = db().firstRow("""
+        def row = db.firstRow("""
 SELECT * FROM et_scene WHERE 
 app_id = $appId and scene_code = $sceneCode
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -52,7 +55,7 @@ LIMIT 1
     SceneRuleDO getRuleById(Long id) {
         if (id == null) return null
 
-        def row = db().firstRow("""
+        def row = db.firstRow("""
 SELECT * FROM et_scene_rule WHERE id = $id  
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 LIMIT 1
@@ -63,7 +66,7 @@ LIMIT 1
     List<SceneRuleDO> getRulesByApp(String appId) {
         if (appId == null || appId.isAllWhitespace()) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_rule WHERE app_id = $appId 
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 ORDER BY priority
@@ -75,7 +78,7 @@ ORDER BY priority
         if (appId == null || appId.isAllWhitespace()
                 || sceneCode == null || sceneCode.isAllWhitespace()) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_rule WHERE app_id = $appId AND scene_code = $sceneCode 
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 ORDER BY priority 
@@ -88,7 +91,7 @@ ORDER BY priority
         codes = codes?.findAll{ it != null & !it.isAllWhitespace()}
         if (!codes) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_action WHERE action_code IN (${codes.collect{'?'}.join(',')})
 AND app_id = ?
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
@@ -100,7 +103,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         if (appId == null || appId.isAllWhitespace()
                 || sceneCodes == null || sceneCodes.isAllWhitespace()) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_action WHERE scene_code = $sceneCodes AND app_id = $appId
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """)
@@ -111,7 +114,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         ids = ids?.findAll{ it}
         if (!ids) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_rule_expr WHERE id IN (${ids.collect {'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """, ids as List<Object>)
@@ -122,7 +125,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         if (appId == null || appId.isAllWhitespace()
                 || sceneCode == null || sceneCode.isAllWhitespace()) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_rule_expr WHERE app_id = $appId AND scene_code = $sceneCode
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """)
@@ -133,7 +136,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         ids = ids?.findAll{ it}
         if (!ids) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_var WHERE id IN (${ids.collect{'?'}.join(',')})
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """, ids as List<Object>)
@@ -144,7 +147,7 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
         if (appId == null || appId.isAllWhitespace()
                 || sceneCode == null || sceneCode.isAllWhitespace()) return []
 
-        def rows = db().rows("""
+        def rows = db.rows("""
 SELECT * FROM et_scene_var WHERE app_id = $appId AND scene_code = $sceneCode
 AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
 """)
@@ -161,7 +164,6 @@ AND deleted_at IN ('1970-01-01 08:00:00', '0000-00-00 00:00:00')
                 || rule.ruleDesc == null || rule.ruleDesc.isAllWhitespace()
                 || rule.priority == null || rule.actionsCode == null) return -1
 
-        def db = db()
         db.executeInsert("""
 INSERT INTO et_scene_rule 
 (app_id, scene_id, scene_code, rule, rule_type, rule_code, rule_name, rule_desc, priority, actions_code) VALUES (
@@ -179,7 +181,6 @@ INSERT INTO et_scene_rule
                 || rule.ruleDesc == null || rule.ruleDesc.isAllWhitespace()
                 || rule.priority == null || rule.actionsCode == null) return -1
 
-        def db = db()
         db.execute("""
 update et_scene_rule 
 set rule = ${rule.rule},
@@ -206,7 +207,6 @@ LIMIT 1
                 || scene.sceneDesc.isAllWhitespace()
                 || scene.sceneType == null) return -1
 
-        def db = db()
         db.execute("""
 INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VALUES ( 
   ?.appId, ?.sceneName, ?.sceneCode, ?.sceneDesc, ?.sceneType 
@@ -223,7 +223,6 @@ INSERT INTO et_scene (app_id, scene_name, scene_code, scene_desc, scene_type) VA
                 || sceneCode == null || sceneCode.isAllWhitespace() || status == null)
             return -1
 
-        def db = db()
         db.execute("""
 update et_scene set  
 scene_status = $status
@@ -241,7 +240,6 @@ limit 1
                 || scene.sceneType == null
         ) return -1
 
-        def db = db()
         db.execute("""
 update et_scene set  
 scene_name = ${scene.sceneName},
@@ -272,7 +270,6 @@ limit 1
                 || var.varDesc == null || var.varDesc.isAllWhitespace()
         ) return -1
 
-        def db = db()
         db.execute("""
 INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_type, var_desc) VALUES (
   ?.appId, ?.sceneId, ?.sceneCode, ?.varName, ?.varType, ?.varDesc
@@ -288,7 +285,6 @@ INSERT INTO et_scene_var (app_id, scene_id, scene_code, var_name, var_type, var_
                 || var.varType == null || var.varType.isAllWhitespace()
                 || var.varDesc == null || var.varDesc.isAllWhitespace()) return -1
 
-        def db = db()
         db.execute("""
 update et_scene_var set 
 var_name = ${var.varName},
@@ -316,7 +312,6 @@ limit 1
                 || action.action.isAllWhitespace()
         ) return -1
 
-        def db = db()
         db.execute("""
 INSERT INTO et_scene_action (
 app_id, scene_id, scene_code, action_code, action_desc, action) VALUES (
@@ -333,7 +328,6 @@ app_id, scene_id, scene_code, action_code, action_desc, action) VALUES (
                 || action.actionDesc == null || action.actionDesc.isAllWhitespace()
                 || action.action == null || action.action.isAllWhitespace()) return -1
 
-        def db = db()
         db.execute("""
 update et_scene_action 
 set action_desc = ${action.actionDesc},
@@ -355,7 +349,6 @@ limit 1
                 || expr.exprVal == null || expr.exprVal.isAllWhitespace()
         ) return -1
 
-        def db = db()
         db.execute("""
 INSERT INTO et_scene_rule_expr (app_id, scene_id, scene_code, expr_var, expr_op, expr_val) VALUES (
   ?.appId, ?.sceneId, ?.sceneCode, ?.exprVar, ?.exprOp, ?.exprVal
@@ -370,7 +363,6 @@ INSERT INTO et_scene_rule_expr (app_id, scene_id, scene_code, expr_var, expr_op,
                 || expr.exprOp == null || expr.exprOp.isAllWhitespace()
                 || expr.exprVal == null || expr.exprVal.isAllWhitespace()) return -1
 
-        def db = db()
         db.execute("""
 update et_scene_rule_expr set 
 expr_var = ${expr.exprVar},

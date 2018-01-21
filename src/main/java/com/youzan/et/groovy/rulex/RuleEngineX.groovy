@@ -63,7 +63,15 @@ class RuleEngineX extends RuleEngine implements ApplicationContextAware {
             throw new RuntimeException('请为 RuleEngineX Bean 配置 dataSource 属性')
         }
         if (!sceneService) {
-            sceneService = new SceneService(sceneDS: new SceneDS(ds: dataSource))
+            sceneService = new SceneService(sceneDS: new SceneDS(dataSource))
+        }
+    }
+
+    void init() {
+        try {
+            sceneService.init()
+        } catch (Exception e) {
+            log.error("数据库初始化失败", e)
         }
     }
 

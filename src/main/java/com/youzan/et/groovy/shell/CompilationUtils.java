@@ -20,7 +20,7 @@ import java.util.Map;
  * @author chuxiaofeng
  */
 public class CompilationUtils {
-    // 注意: 仅作为 提醒使用, 只能方式 System.exit() 方式调用
+    // 注意: 仅作为 提醒使用, 只能防止 System.exit() 方式调用
     public final static CompilationCustomizer FORBIDDEN_SYSTEM_EXIT = new CompilationCustomizer(CompilePhase.CANONICALIZATION) {
         @Override
         public void call(SourceUnit source, GeneratorContext context, ClassNode classNode) throws CompilationFailedException {

@@ -1,5 +1,8 @@
 package com.youzan.et.groovy.rulex
 
+
+// 测试 IDE DSL 预发提示 rulex.gdsl
+
 scene {
     name 'chuxiaofeng'
     rule {

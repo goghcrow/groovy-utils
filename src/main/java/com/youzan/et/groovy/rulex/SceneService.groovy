@@ -113,6 +113,7 @@ class SceneService {
     }
 
     private static Map<Long, Map> parseExprs(List<SceneRuleDO> rules, Map<Long, String> exprTbl) {
+        /* IDE 类型推导有问题, 忽略 */
         rules.findAll{ it.ruleType == SceneRuleDO.expr }
                 .collectEntries { SceneRuleDO rule ->
             [(rule.id): rule.rule.findAll(~/(?:\{(\d+)\}){1}\s*([&\|]{2})?/) { List<String> it->
