@@ -16,7 +16,7 @@ class SceneDS {
     }
 
     void init() {
-        db.execute(getClass().getResource('rulex/init.sql').text)
+        db.execute(getClass().getResource('/rulex/init.sql').text)
     }
 
     List<String> getApps() {
